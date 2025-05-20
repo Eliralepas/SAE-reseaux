@@ -1,15 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 
 
 typedef u_int8_t octet;
-typedef struct adresse_MAC{
+typedef struct addr_MAC{
     octet mac[6];
-};
+} adresse_MAC;
 
-typedef struct adresse_IP{
+typedef struct addr_IP{
     octet ip[4];
-};
+} adresse_IP;
 
 typedef struct station
 {
