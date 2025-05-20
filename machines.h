@@ -16,9 +16,9 @@ typedef struct station
 {
     adresse_MAC st_MAC;
     adresse_IP st_IP;
-};
+} station;
 
-typedef struct asso
+typedef struct association
 {
     adresse_MAC st_MAC;
     int port;
@@ -31,7 +31,7 @@ typedef struct swtch
     octet *priorite;
     association *tab_association; //malloc * TAILLE NB PORTS
     adresse_MAC tab_voisins[];
-};
+} swtch;
 
 
 
