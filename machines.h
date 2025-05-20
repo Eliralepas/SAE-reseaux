@@ -4,11 +4,11 @@
 
 typedef u_int8_t octet;
 typedef struct adresse_MAC{
-    typedef octet mac[6];
+    octet mac[6];
 };
 
 typedef struct adresse_IP{
-    typedef octet ip[4];
+    octet ip[4];
 };
 
 typedef struct station
@@ -34,3 +34,4 @@ typedef struct swtch
 
 
 void mac_to_str(adresse_MAC M, char *str);
+void ip_to_str(adresse_IP, char *str);
