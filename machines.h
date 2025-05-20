@@ -18,11 +18,11 @@ typedef struct station
     adresse_IP st_IP;
 };
 
-typedef struct association
+typedef struct asso
 {
     adresse_MAC st_MAC;
     int port;
-};
+} association;
 
 typedef struct swtch
 {
