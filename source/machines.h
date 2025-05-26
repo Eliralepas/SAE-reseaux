@@ -1,14 +1,15 @@
+#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 
 
 typedef u_int8_t octet;
-typedef struct addr_MAC{
+typedef struct adresse_MAC{
     octet mac[6];
 } adresse_MAC;
 
-typedef struct addr_IP{
+typedef struct adresse_IP{
     octet ip[4];
 } adresse_IP;
 
@@ -51,4 +52,4 @@ void deinit_station(station *st);
 void init_switch(swtch *sw);
 void deinit_switch(swtch *sw);
 void mac_to_str(adresse_MAC M, char *str);
-void ip_to_str(adresse_IP, char *str);
+void ip_to_str(adresse_IP IP, char *str);

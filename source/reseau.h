@@ -1,6 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
+#pragma once
 #include "machines.h"
 
 typedef struct arete

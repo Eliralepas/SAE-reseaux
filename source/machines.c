@@ -1,9 +1,10 @@
 #include "machines.h"
+#include <string.h>
 
 
 void init_station(station *st){
-    
-    st->st_IP[1] = 0; 
+    memset(st->st_IP.ip, 0, 4);
+    memset(st->st_MAC.mac, 0, 6);
 }
 
 void deinit_station(station *st){
@@ -19,10 +20,10 @@ void deinit_switch(swtch *sw){
 }
 
 void mac_to_str(adresse_MAC M, char *str){
-
+    sprintf(str, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX\n", M.mac[0], M.mac[1], M.mac[2], M.mac[3], M.mac[4], M.mac[5]);
 }
 
-void ip_to_str(adresse_IP, char *str){
-
+void ip_to_str(adresse_IP IP, char *str){
+    sprintf(str, "%02hhX:%02hhX:%02hhX:%02hhX:%02hhX:%02hhX\n", IP.ip[0], IP.ip[1], IP.ip[2], IP.ip[3]);
 }
 
