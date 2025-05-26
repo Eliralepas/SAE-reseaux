@@ -30,10 +30,20 @@ typedef struct swtch
     int nb_port;
     octet *priorite;
     association *tab_association; //malloc * TAILLE NB PORTS
-    adresse_MAC tab_voisins[];
+    int taille_tab;
+    //adresse_MAC tab_voisins[];
 } swtch;
 
+enum TypeEquipement{
+    TYPE_STATION,
+    TYPE_SWITCH
+};
 
+typedef struct machine{
+    TypeEquipement *typeEquip;
+    int nb_Equipement;
+    void *equipement; //pointeur vers switch ou station :D
+};
 
 void mac_to_str(adresse_MAC M, char *str);
 void ip_to_str(adresse_IP, char *str);
