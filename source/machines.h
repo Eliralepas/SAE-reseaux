@@ -34,10 +34,10 @@ typedef struct swtch
     adresse_MAC tab_voisins[];
 } swtch;
 
-enum typeEquipement{
+typedef enum typeEquipement{
     TYPE_STATION,
     TYPE_SWITCH
-};
+}typeEquipement;
 
 typedef struct machine{
     typeEquipement *tp_equip;
