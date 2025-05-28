@@ -41,7 +41,7 @@ typedef enum typeEquipement{
 }typeEquipement;
 
 typedef struct machine{
-    typeEquipement *tp_equip;
+    typeEquipement tp_equip;
     void *equipement;
 
 } machine;
@@ -53,3 +53,5 @@ void init_switch(swtch *sw);
 void deinit_switch(swtch *sw);
 void mac_to_str(adresse_MAC M, char *str);
 void ip_to_str(adresse_IP IP, char *str);
+void str_to_mac(adresse_MAC *M, char *str);
+void str_to_ip(adresse_IP *IP, char *str);
