@@ -25,6 +25,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     if (fscanf(fichier, "%zu %d\n", &nb_machines, &nb_liens)!=2){
         //si ne lis pas 2 entiers pour la première ligne
         perror("Erreur dans la lecture du fichier");
+        fclose(fichier);
         return ERROR;
     }
 
@@ -42,13 +43,18 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         fgets(ligne, MAX_BUFFER_SIZE, fichier);
 
         int type;   //1 pour station et 2 pour switch
-
         char info1[32];
         char info2[32];
         char info3[32];
         int nb = sscanf(ligne, "%d;%31[^;];%31[^;];%31[^\n]", &type, info1, info2, info3);
         //%31 -> Limite à 31 caractères maximum
         // [^;]	lit tout sauf ;
+
+        if (nb != 4 && nb != 3) {
+            fprintf(stderr, "Ligne mal formée pour machine %d : %s\n", i, ligne);
+            fclose(fichier);
+            return ERROR;
+        }
 
         machine* m = &g->machines[i];
         m->id = i;
@@ -67,66 +73,72 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 
         } 
         else if (type == 2) {  //si 2 alors switch
-            int nombre;
-            nombre = atoi(info2);   //convertir une chaine de caractère en entier
+            int nombre = atoi(info2);   //convertir une chaine de caractère en entier
             swtch* sw = malloc(sizeof(swtch)); // tab_voisins
-
             //Adresse Mac
             str_to_mac(&sw->sw_MAC, info1);
-
             sw->nb_port = nombre;
             sw->priorite = atoi(info3);
             sw->tab_association = malloc(sizeof(association)*nombre);
+            sw->port_utilises = 0;
             m->equipement = sw;
         }
-        else if(nb!=4 && nb!=3){
-            perror("La ligne est mal formé");
-        }
+        
     }
 
     //création des associations (src;dst;poids)
 
     //tab_voisin !!
+
     for (int i = 0; i < nb_liens; i++) {
         int src;
-        int dst;
+        int dst; 
         int poids;
-
         bool trv = false;
 
-        fscanf(fichier, "%d;%d;%d\n", &src, &dst, &poids);
-        for (int j=0; j<nb_machines; j++){
-            arete art = g->aretes[i];   
-            machine m1 = g->machines[j];
-            //Rajouter le poids
-            art.poids = poids;
-
-            //recherche de l'id de la machine src
-            if (m1.id == src){
-                //si celui trouve la source alors cherche la destination 
-                for (int p=0; p<nb_machines; p++){
-                machine m2 = g->machines[p];
-                    if(m2.id == dst){
-                        trv = true;
-                        //affetcer a la n-ième arrete les données
-                        art.m1 = m1;
-                        art.m2 = m2;
-                    }
-                }
-            }
-        }
-        if(!trv){
-            perror("La source/destination n'a pas était trouvée (Index de la machine inconnu)");
+        if (fscanf(fichier, "%d;%d;%d\n", &src, &dst, &poids) != 3) {
+            perror("Erreur de lecture des arêtes");
             return ERROR;
+        }
+
+        machine *m1 = &g->machines[src];
+        machine *m2 = &g->machines[dst];
+
+        g->aretes[i].m1 = *m1;
+        g->aretes[i].m2 = *m2;
+        g->aretes[i].poids = poids;
+
+        // si un switch et un station
+        if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_STATION) {
+            swtch *sw = (swtch *)m1->equipement;
+            station *st = (station *)m2->equipement;
+            int port = sw->port_utilises++;
+            sw->tab_association[port].port = port;
+            sw->tab_association[port].st_MAC = st->st_MAC;
+        }
+        else if (m2->tp_equip == TYPE_SWITCH && m1->tp_equip == TYPE_STATION) {
+            swtch *sw = (swtch *)m2->equipement;
+            station *st = (station *)m1->equipement;
+            int port = sw->port_utilises++;
+            sw->tab_association[port].port = port;
+            sw->tab_association[port].st_MAC = st->st_MAC;
+        }
+        // si deux switch 
+        else if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_SWITCH) {
+            swtch *sw1 = (swtch *)m1->equipement;
+            swtch *sw2 = (swtch *)m2->equipement;
+
+            int port1 = sw1->port_utilises++;
+            sw1->tab_association[port1].port = port1;
+            sw1->tab_association[port1].st_MAC = sw2->sw_MAC;
+
+            int port2 = sw2->port_utilises++;
+            sw2->tab_association[port2].port = port2;
+            sw2->tab_association[port2].st_MAC = sw1->sw_MAC;
         }
     }
 
     fclose(fichier);
-
-    //free sinon on va nous taper
-    free(fichier);
-    fichier = NULL;
-
     return SUCCESS;
 }
 
@@ -179,8 +191,14 @@ void affichage_reseau(reseau *g){
             mac_to_str(equip->sw_MAC, str);
             printf("L'adresse MAC : %s\n", str);
             printf("Nombre de ports : %d\n", equip->nb_port);
-            printf("La priorité : %d", equip->priorite);
+            printf("La priorité : %d\n", equip->priorite);
             //tab association
+            printf("---------TABLEAU DE COMMUTATION---------\n");
+            for (int i=0; i<equip->nb_port; i++){
+                char str1[18];
+                mac_to_str(equip->sw_MAC, str);
+                printf("Addresse (%s) --> port %d\n", equip->priorite);
+            }
 
         }
 
