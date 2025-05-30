@@ -33,14 +33,28 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     g->nbr_machines = nb_machines;
     g->nb_aretes = nb_liens;
     g->aretes = malloc(nb_liens*sizeof(arete));
+    if (!g->aretes) {
+        perror("Erreur allocation aretes");
+        return ERROR;
+    }
     g->aretes_capacite = nb_liens;
     g->machines = malloc(nb_machines * sizeof(machine));
+    if (!g->machines) {
+        perror("Erreur allocation machines");
+        free(g->aretes);
+        return ERROR;
+    }   
 
     //config des machines a partir du fichier 
     for (int i = 0; i < nb_machines; i++) {
         //récupérer la ligne dans une variable ligne
         char ligne[MAX_BUFFER_SIZE];
-        fgets(ligne, MAX_BUFFER_SIZE, fichier);
+        if (fgets(ligne, MAX_BUFFER_SIZE, fichier) == NULL) 
+        {
+            perror("Erreur de lecture de la machine");
+            fclose(fichier);
+            return ERROR;
+        }
 
         int type;   //1 pour station et 2 pour switch
         char info1[32];
@@ -66,7 +80,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             str_to_mac(&st->st_MAC, info1);
 
             //Adresse IP
-            str_to_mac(&st->st_IP, info2);
+            str_to_ip(&st->st_IP, info2);
 
             //rajouter la station dans equipement
             m->equipement = st;
@@ -112,29 +126,56 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_STATION) {
             swtch *sw = (swtch *)m1->equipement;
             station *st = (station *)m2->equipement;
-            int port = sw->port_utilises++;
-            sw->tab_association[port].port = port;
-            sw->tab_association[port].st_MAC = st->st_MAC;
+            if (sw->port_utilises < sw->nb_port) {
+                int port = sw->port_utilises;
+                sw->tab_association[port].port = port;
+                sw->tab_association[port].st_MAC = st->st_MAC;
+                sw->port_utilises++;
+            }
+            else {
+                perror("Erreur : trop de connexions sur le switch\n");
+                return ERROR;
+            }  
         }
         else if (m2->tp_equip == TYPE_SWITCH && m1->tp_equip == TYPE_STATION) {
             swtch *sw = (swtch *)m2->equipement;
             station *st = (station *)m1->equipement;
-            int port = sw->port_utilises++;
-            sw->tab_association[port].port = port;
-            sw->tab_association[port].st_MAC = st->st_MAC;
+            if (sw->port_utilises < sw->nb_port) {
+                int port = sw->port_utilises;
+                sw->tab_association[port].port = port;
+                sw->tab_association[port].st_MAC = st->st_MAC;
+                sw->port_utilises++;
+            }
+            else {
+                perror("Erreur : trop de connexions sur le switch\n");
+                return ERROR;
+            }  
         }
         // si deux switch 
         else if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_SWITCH) {
             swtch *sw1 = (swtch *)m1->equipement;
             swtch *sw2 = (swtch *)m2->equipement;
+            if (sw1->port_utilises < sw1->nb_port) {
+                int port1 = sw1->port_utilises;
+                sw1->tab_association[port1].port = port1;
+                sw1->tab_association[port1].st_MAC = sw2->sw_MAC;
+                sw1->port_utilises++;
+            }
+            else {
+                perror("Erreur : trop de connexions sur le switch\n");
+                return ERROR;
+            }  
 
-            int port1 = sw1->port_utilises++;
-            sw1->tab_association[port1].port = port1;
-            sw1->tab_association[port1].st_MAC = sw2->sw_MAC;
-
-            int port2 = sw2->port_utilises++;
-            sw2->tab_association[port2].port = port2;
-            sw2->tab_association[port2].st_MAC = sw1->sw_MAC;
+            if (sw2->port_utilises < sw2->nb_port) {
+                int port2 = sw2->port_utilises;
+                sw2->tab_association[port2].port = port2;
+                sw2->tab_association[port2].st_MAC = sw1->sw_MAC;
+                sw2->port_utilises++;
+            }
+            else {
+                perror("Erreur : trop de connexions sur le switch\n");
+                return ERROR;
+            }  
         }
     }
 
@@ -143,22 +184,6 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 }
 
 void affichage_reseau(reseau *g){
-    /*size_t nbr_machines;
-	machine *machines;
-	arete *aretes;
-	size_t aretes_capacite;
-	size_t nb_aretes;*/
-
-    /*
-    typedef struct machine{
-    int id;
-    typeEquipement tp_equip;
-    void *equipement;
-
-    } machine;*/
-
-    //njrhgioerqg
-
     size_t nb = g->nbr_machines;
     printf("----------------RESEAU----------------\n");
     printf("Nombre de machines : \t%zu\n", nb);
@@ -169,9 +194,7 @@ void affichage_reseau(reseau *g){
         if (m.tp_equip == TYPE_STATION)
         {
             printf("Type de la machine : STATION\n");
-            /*adresse_MAC st_MAC;
-            adresse_IP st_IP;*/
-            station* equip = (station*)  m.equipement; //cast 
+            station* equip = (station*)  m.equipement;
             char str[18];
             mac_to_str(equip->st_MAC, str);
             printf("L'adresse MAC : %s\n", str);
@@ -181,23 +204,19 @@ void affichage_reseau(reseau *g){
         }
         else if (m.tp_equip == TYPE_SWITCH)
         {
-            /*adresse_MAC sw_mac;
-            int nb_port;
-            octet *priorite;
-            association *tab_association; //malloc * TAILLE NB PORTS*/
-            swtch* equip = (swtch*)  m.equipement; //cast 
+            swtch* equip = (swtch*)  m.equipement;
             printf("Type de la machine : SWITCH\n");
             char str[18];
             mac_to_str(equip->sw_MAC, str);
             printf("L'adresse MAC : %s\n", str);
             printf("Nombre de ports : %d\n", equip->nb_port);
-            printf("La priorité : %d\n", equip->priorite);
-            //tab association
+            printf("La priorité : %hhn\n", equip->priorite);
             printf("---------TABLEAU DE COMMUTATION---------\n");
             for (int i=0; i<equip->nb_port; i++){
                 char str1[18];
-                mac_to_str(equip->sw_MAC, str);
-                printf("Addresse (%s) --> port %d\n", equip->priorite);
+                association asso = equip->tab_association[i];
+                mac_to_str(asso.st_MAC, str1);
+                printf("Addresse (%s) --> port %d\n", str1, asso.port);
             }
 
         }
