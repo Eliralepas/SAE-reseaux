@@ -145,6 +145,8 @@ void affichage_reseau(reseau *g){
 
     } machine;*/
 
+    //njrhgioerqg
+
     size_t nb = g->nbr_machines;
     printf("----------------RESEAU----------------\n");
     printf("Nombre de machines : \t%zu\n", nb);
