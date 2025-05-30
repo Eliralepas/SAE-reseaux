@@ -22,7 +22,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     int nb_machines;
     int nb_liens;
     //lire des données de la première ligne 
-    if (fscanf(fichier, "%d %d\n", &nb_machines, &nb_liens)!=2){
+    if (fscanf(fichier, "%zu %d\n", &nb_machines, &nb_liens)!=2){
         //si ne lis pas 2 entiers pour la première ligne
         perror("Erreur dans la lecture du fichier");
         return ERROR;
@@ -36,7 +36,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     g->machines = malloc(nb_machines * sizeof(machine));
 
     //config des machines a partir du fichier 
-    for (size_t i = 0; i < nb_machines; i++) {
+    for (int i = 0; i < nb_machines; i++) {
         //récupérer la ligne dans une variable ligne
         char ligne[MAX_BUFFER_SIZE];
         fgets(ligne, MAX_BUFFER_SIZE, fichier);
@@ -69,10 +69,10 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         else if (type == 2) {  //si 2 alors switch
             int nombre;
             nombre = atoi(info2);   //convertir une chaine de caractère en entier
-            swtch* sw = malloc(sizeof(swtch) + sizeof(adresse_MAC) * nombre); // tab_voisins
+            swtch* sw = malloc(sizeof(swtch)); // tab_voisins
 
             //Adresse Mac
-            str_to_mac(&sw->sw_mac, info1);
+            str_to_mac(&sw->sw_MAC, info1);
 
             sw->nb_port = nombre;
             sw->priorite = atoi(info3);
@@ -85,6 +85,8 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     }
 
     //création des associations (src;dst;poids)
+
+    //tab_voisin !!
     for (int i = 0; i < nb_liens; i++) {
         int src;
         int dst;
@@ -126,4 +128,60 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     fichier = NULL;
 
     return SUCCESS;
+}
+
+void affichage_reseau(reseau *g){
+    /*size_t nbr_machines;
+	machine *machines;
+	arete *aretes;
+	size_t aretes_capacite;
+	size_t nb_aretes;*/
+
+    /*
+    typedef struct machine{
+    int id;
+    typeEquipement tp_equip;
+    void *equipement;
+
+    } machine;*/
+
+    size_t nb = g->nbr_machines;
+    printf("----------------RESEAU----------------\n");
+    printf("Nombre de machines : \t%zu\n", nb);
+    for (int i=0; i<nb; i++){
+        machine m = g->machines[i];
+        printf("-------------Machine n°%d-------------\n",i);
+        printf("Id de la machine : %d\n", m.id);
+        if (m.tp_equip == TYPE_STATION)
+        {
+            printf("Type de la machine : STATION\n");
+            /*adresse_MAC st_MAC;
+            adresse_IP st_IP;*/
+            station* equip = (station*)  m.equipement; //cast 
+            char str[18];
+            mac_to_str(equip->st_MAC, str);
+            printf("L'adresse MAC : %s\n", str);
+            char str1[18];
+            ip_to_str(equip->st_IP, str1);
+            printf("L'adresse IP : %s\n", str1);
+        }
+        else if (m.tp_equip == TYPE_SWITCH)
+        {
+            /*adresse_MAC sw_mac;
+            int nb_port;
+            octet *priorite;
+            association *tab_association; //malloc * TAILLE NB PORTS*/
+            swtch* equip = (swtch*)  m.equipement; //cast 
+            printf("Type de la machine : SWITCH\n");
+            char str[18];
+            mac_to_str(equip->sw_MAC, str);
+            printf("L'adresse MAC : %s\n", str);
+            printf("Nombre de ports : %d\n", equip->nb_port);
+            printf("La priorité : %d", equip->priorite);
+            //tab association
+
+        }
+
+    }
+
 }

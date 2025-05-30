@@ -23,4 +23,4 @@ typedef struct reseau
 } reseau;
 
 int charger_reseau(const char* nom_fichier, reseau* g);
-void affichage_reseau(reseau *rs);
+void affichage_reseau(reseau *g);

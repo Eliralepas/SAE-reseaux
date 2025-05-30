@@ -27,12 +27,12 @@ typedef struct association
 
 typedef struct swtch
 {
-    adresse_MAC sw_mac;
+    adresse_MAC sw_MAC;
     int nb_port;
     octet *priorite;
     association *tab_association; //malloc * TAILLE NB PORTS
 
-    adresse_MAC tab_voisins[];
+    adresse_MAC tab_voisins[];  //j'ai oublié son utilité jpp 
 } swtch;
 
 typedef enum typeEquipement{
