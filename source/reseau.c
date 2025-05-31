@@ -115,6 +115,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         }
         if(!trv){
             perror("La source/destination n'a pas était trouvée (Index de la machine inconnu)");
+            return ERROR;
         }
     }
 
