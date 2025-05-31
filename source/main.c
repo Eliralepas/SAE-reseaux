@@ -39,7 +39,7 @@ int main(){
         return -1;
     }
     affichage_reseau(r);
-    free_reseau(r);
+    deinit_reseau(r);
     return 0;
 }
 

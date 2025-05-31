@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include "machines.h"
 #include "reseau.h"
 
@@ -15,7 +16,6 @@ void init_reseau(reseau *r)
     r->aretes_capacite = 0;
 }
 
-
 //Lecture du fichier de configuration renvoie un structure reseau, si celui ci n'est pas possible alors renvoie null
 int charger_reseau(const char* nom_fichier, reseau* g) {
     FILE* fichier = fopen(nom_fichier, "r");
@@ -29,7 +29,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     int nb_machines;
     int nb_liens;
     //lire des données de la première ligne 
-    if (fscanf(fichier, "%zu %d\n", &nb_machines, &nb_liens)!=2){
+    if (fscanf(fichier, "%u %d\n", &nb_machines, &nb_liens)!=2){
         //si ne lis pas 2 entiers pour la première ligne
         perror("Erreur dans la lecture du fichier");
         fclose(fichier);
@@ -202,7 +202,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 void affichage_reseau(reseau *g){
     size_t nb = g->nbr_machines;
     printf("----------------RESEAU----------------\n");
-    printf("Nombre de machines : \t%zu\n", nb);
+    printf("Nombre de machines : \t%zu\n\n", nb);
     for (int i=0; i<nb; i++){
         machine m = g->machines[i];
         printf("-------------Machine n°%d-------------\n",i);
@@ -228,22 +228,27 @@ void affichage_reseau(reseau *g){
             printf("Nombre de ports : %d\n", equip->nb_port);
             printf("La priorité : %u\n", equip->priorite);
             printf("---------TABLEAU DE COMMUTATION---------\n");
-            for (int i=0; i<equip->nb_port; i++){
+            for (int j=0; j<equip->port_utilises; j++){
                 char str1[18];
-                association asso = equip->tab_association[i];
+                association asso = equip->tab_association[j];
                 mac_to_str(asso.st_MAC, str1);
                 printf("Addresse (%s) --> port %d\n", str1, asso.port);
             }
 
         }
-
+        printf("\n");
     }
-
+    
+    printf("---------------LIAISONS--------------\n");
+    for (int p=0; p<g->nb_aretes; p++){
+        arete art = g->aretes[p];
+        printf("%d --> %d : %ld\n", art.m1.id, art.m2.id, art.poids);
+    }
 }
 
-void free_reseau(reseau *r) {
+void deinit_reseau(reseau *r) {
     if (r == NULL) return;
-
+    
     // libération des machines
     for (int i = 0; i < r->nbr_machines; i++) {
         machine *m = &r->machines[i];

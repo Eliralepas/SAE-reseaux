@@ -1,6 +1,7 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <sys/types.h>
 
 
@@ -29,7 +30,7 @@ typedef struct swtch
 {
     adresse_MAC sw_MAC;
     int nb_port;
-    octet priorite;
+    uint16_t priorite;    //2 octets de pt fort
     association *tab_association; //malloc * TAILLE NB PORTS
     int port_utilises; // compteur 
     adresse_MAC tab_voisins[];  //j'ai oublié son utilité jpp 
