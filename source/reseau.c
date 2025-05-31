@@ -1,5 +1,3 @@
-#pragma once
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,6 +5,15 @@
 #include "reseau.h"
 
 #define MAX_BUFFER_SIZE 255
+
+void init_reseau(reseau *r)
+{
+    r->nbr_machines = 0;
+    r->nb_aretes = 0;
+    r->machines = NULL;
+    r->aretes = NULL;
+    r->aretes_capacite = 0;
+}
 
 
 //Lecture du fichier de configuration renvoie un structure reseau, si celui ci n'est pas possible alors renvoie null
@@ -16,7 +23,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     //Si le fichier n'existe pas ou échec d'ouverture 
     if (fichier == NULL) {
         perror("Erreur d'ouverture du fichier");
-        return ERROR;
+        return -1;
     }
 
     int nb_machines;
@@ -26,7 +33,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         //si ne lis pas 2 entiers pour la première ligne
         perror("Erreur dans la lecture du fichier");
         fclose(fichier);
-        return ERROR;
+        return -1;
     }
 
     //Initialisation de ma structure reseau
@@ -35,16 +42,16 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     g->aretes = malloc(nb_liens*sizeof(arete));
     if (!g->aretes) {
         perror("Erreur allocation aretes");
-        return ERROR;
+        return -1;
     }
     g->aretes_capacite = nb_liens;
     g->machines = malloc(nb_machines * sizeof(machine));
     if (!g->machines) {
         perror("Erreur allocation machines");
         free(g->aretes);
-        return ERROR;
+        return -1;
     }   
-
+    
     //config des machines a partir du fichier 
     for (int i = 0; i < nb_machines; i++) {
         //récupérer la ligne dans une variable ligne
@@ -72,9 +79,10 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 
         machine* m = &g->machines[i];
         m->id = i;
+        //si 1 alors station, 2 si switch
         m->tp_equip = (type == 1) ? TYPE_STATION : TYPE_SWITCH;
-
-        if (type == 1) {  //si 1 alors station
+        
+        if (m->tp_equip == TYPE_STATION) {  
             station* st = malloc(sizeof(station));
             //Adresse mac
             str_to_mac(&st->st_MAC, info1);
@@ -86,8 +94,14 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             m->equipement = st;
 
         } 
-        else if (type == 2) {  //si 2 alors switch
+        else if (m->tp_equip == TYPE_SWITCH) {
             int nombre = atoi(info2);   //convertir une chaine de caractère en entier
+            if (nombre <= 0) 
+            {
+                fprintf(stderr, "Switch avec un nombre de ports invalide : %s\n", info2);
+                return ERROR;
+            }
+
             swtch* sw = malloc(sizeof(swtch)); // tab_voisins
             //Adresse Mac
             str_to_mac(&sw->sw_MAC, info1);
@@ -97,13 +111,15 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             sw->port_utilises = 0;
             m->equipement = sw;
         }
+        else {
+            fprintf(stderr, "Type inconnu pour machine %d : %d\n", i, type);
+            fclose(fichier);
+            return ERROR;
+        }
         
     }
 
     //création des associations (src;dst;poids)
-
-    //tab_voisin !!
-
     for (int i = 0; i < nb_liens; i++) {
         int src;
         int dst; 
@@ -178,7 +194,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             }  
         }
     }
-
+    
     fclose(fichier);
     return SUCCESS;
 }
@@ -210,7 +226,7 @@ void affichage_reseau(reseau *g){
             mac_to_str(equip->sw_MAC, str);
             printf("L'adresse MAC : %s\n", str);
             printf("Nombre de ports : %d\n", equip->nb_port);
-            printf("La priorité : %hhn\n", equip->priorite);
+            printf("La priorité : %u\n", equip->priorite);
             printf("---------TABLEAU DE COMMUTATION---------\n");
             for (int i=0; i<equip->nb_port; i++){
                 char str1[18];
@@ -224,3 +240,35 @@ void affichage_reseau(reseau *g){
     }
 
 }
+
+void free_reseau(reseau *r) {
+    if (r == NULL) return;
+
+    // libération des machines
+    for (int i = 0; i < r->nbr_machines; i++) {
+        machine *m = &r->machines[i];
+        if (m->tp_equip == TYPE_SWITCH && m->equipement != NULL) {
+            swtch *sw = (swtch*) m->equipement;
+            deinit_switch(sw);
+            free(sw);
+            m->equipement = NULL;
+        }
+        else if (m->tp_equip == TYPE_STATION && m->equipement != NULL){
+            station *st = (station*) m->equipement;
+            deinit_station(st);
+            free(st);
+            m->equipement = NULL;
+        }
+    }
+    if (r->machines != NULL) {
+        free(r->machines);
+        r->machines = NULL;
+    }
+    if (r->aretes != NULL) {
+        free(r->aretes);
+        r->aretes = NULL;
+    }
+    r->nbr_machines = 0;
+    r->nb_aretes = 0;
+}
+

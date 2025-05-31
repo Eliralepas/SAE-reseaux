@@ -1,3 +1,4 @@
+#pragma once
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -22,5 +23,7 @@ typedef struct reseau
 	size_t nb_aretes;
 } reseau;
 
+void init_reseau(reseau *r);
 int charger_reseau(const char* nom_fichier, reseau* g);
 void affichage_reseau(reseau *g);
+void free_reseau(reseau *r);

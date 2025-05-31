@@ -30,15 +30,16 @@ int main(){
     free(str);
     free(statio);
 
-    /*reseau *r = malloc(sizeof(reseau));
+    reseau *r = malloc(sizeof(reseau));
+    init_reseau(r);
     if (charger_reseau("fichier.txt", r) == ERROR) 
     {
         fprintf(stderr, "Échec du chargement du réseau\n");
         free(r);
         return -1;
-    }*/
-    //affichage_reseau(r);
-    
+    }
+    affichage_reseau(r);
+    free_reseau(r);
     return 0;
 }
 

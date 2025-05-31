@@ -29,7 +29,7 @@ typedef struct swtch
 {
     adresse_MAC sw_MAC;
     int nb_port;
-    octet *priorite;
+    octet priorite;
     association *tab_association; //malloc * TAILLE NB PORTS
     int port_utilises; // compteur 
     adresse_MAC tab_voisins[];  //j'ai oublié son utilité jpp 
