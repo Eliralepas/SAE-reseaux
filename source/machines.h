@@ -41,6 +41,7 @@ typedef enum typeEquipement{
 }typeEquipement;
 
 typedef struct machine{
+    int id;
     typeEquipement tp_equip;
     void *equipement;
 
