@@ -7,7 +7,6 @@ int main(){
     //init_station(statio);
     //mac_to_str((statio->st_MAC), str);
 
-    /*
     char *str = (char *)malloc(18 * sizeof(char)); // Allocate memory for the MAC address string
     if (str == NULL) {
         // Handle memory allocation failure
@@ -28,7 +27,7 @@ int main(){
 
     // Free allocated memory
     free(str);
-    free(statio);*/
+    free(statio);
     
     reseau *r = malloc(sizeof(reseau));
     init_reseau(r);
