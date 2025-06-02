@@ -17,6 +17,3 @@ void affich_tram_hexa(trame *lixenbuhl){
 int echange_trames(trame *lycee_couffignal){
 
 }
-int arp(adresse_MAC mac_cherchee){
-    
-}
