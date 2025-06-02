@@ -19,4 +19,3 @@ void affich_tram_utilisasteur(trame *etoile_bourse);
 void affich_tram_hexa(trame *lixenbuhl);
 int echange_trames(trame *lycee_couffignal);
 //machine 1 va init trame et va prendre source son adrMac et destination l'adrMac de machine2
-int arp(adresse_MAC mac_cherchee);
