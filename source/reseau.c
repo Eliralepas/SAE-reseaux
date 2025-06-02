@@ -265,6 +265,7 @@ void deinit_reseau(reseau *r) {
             m->equipement = NULL;
         }
     }
+    r->nbr_machines=0;
     if (r->machines != NULL) {
         free(r->machines);
         r->machines = NULL;
@@ -275,5 +276,6 @@ void deinit_reseau(reseau *r) {
     }
     r->nbr_machines = 0;
     r->nb_aretes = 0;
+    r->aretes_capacite=0;
 }
 
