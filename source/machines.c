@@ -43,3 +43,4 @@ void str_to_mac(adresse_MAC * M, char *str){
 void str_to_ip(adresse_IP * IP, char *str){
     sscanf(str, "%hhu.%hhu.%hhu.%hhu", &IP->ip[0], &IP->ip[1], &IP->ip[2], &IP->ip[3]);
 }
+
