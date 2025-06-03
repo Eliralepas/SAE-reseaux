@@ -4,17 +4,20 @@
 
 void init_station(station *st){
     //pratique vu qu'une machine a 0.0.0.0 en IP avant de s'en voir attribuée une
+    if (st==NULL) return;
     memset(st->st_IP.ip, 0, 4);
     memset(st->st_MAC.mac, 0, 6);
 }
 
 void deinit_station(station *st){
     //Je pense que faut réutiliser cette meme commande vu qu'on veut les repasser à 0
+    if(st==NULL) return;
     memset(st->st_IP.ip, 0, 4);
     memset(st->st_MAC.mac, 0, 6);
 }
 
 void init_switch(swtch *sw){
+    if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
     sw->nb_port = 16; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
@@ -23,6 +26,7 @@ void init_switch(swtch *sw){
 }
 
 void deinit_switch(swtch *sw){
+    if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
     free(sw->tab_association);
     sw->tab_association = NULL;

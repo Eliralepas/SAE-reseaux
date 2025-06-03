@@ -6,12 +6,13 @@
 #include <sys/types.h>
 #include "machines.h" 
 
+#define LONGUEUR_MAX_DATA
+
 typedef struct trame{
     adresse_MAC dest;
     adresse_MAC src;
     octet *data;
-    //size_t data_longueur
-    //ATTENTION : type SI ON A LE TEMPS 
+    size_t data_longueur
 }trame;
 
 void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement, machine source, machine destination); //numero_dabonnement = nombre d'octets pour malloc data
