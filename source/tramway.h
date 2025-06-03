@@ -6,9 +6,13 @@
 #include <sys/types.h>
 #include "machines.h" 
 
+#define LONGUEUR_MAX_DATA
+
 typedef struct trame{
     adresse_MAC dest;
     adresse_MAC src;
+    octet *data;
+    size_t data_long;
     //octet data[];
     //ATTENTION : type SI ON A LE TEMPS 
 }trame;
