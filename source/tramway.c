@@ -58,7 +58,7 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
     printf("Taille données      : %zu octets\n", etoile_bourse->data_longueur);
     printf("Données             : ");
     for (int i = 0; i < etoile_bourse->data_longueur; i++) {
-        printf("%02hhX:", etoile_bourse->data[i]);
+        //printf("%02hhX:", etoile_bourse->data[i]);
     }
     printf("\n---------------------------------------------\n");
 }
@@ -75,10 +75,19 @@ void affich_tram_hexa(trame *lixenbuhl){
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
     printf("%s %s ");
     for(int i = 0; i < lixenbuhl->data_longueur; i++){
-        printf("%02hhX:", lixenbuhl->data[i]);
+        //printf("%02hhX:", lixenbuhl->data[i]);
     }
     printf("\n---------------------------------------------\n");
 }
+
 int echange_trames(trame *lycee_couffignal){
+
+}
+
+void envoie_trame(trame *t){
+
+}
+
+void recoit_trame(trame *t){
 
 }
