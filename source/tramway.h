@@ -9,14 +9,14 @@
 #define LONGUEUR_MAX_DATA
 
 typedef enum{
-    BPDU
+    BPDU,
+    PING
 }typeMessage;
 
 typedef struct trame{
     adresse_MAC dest;
     adresse_MAC src;
-    void *data;     //qui peut prendre un string ou int ou n'importe quoic
-    size_t data_longueur;
+    void *data;     //qui peut prendre un string ou int ou n'importe quoi
     typeMessage tp;
 }trame;
 
