@@ -33,7 +33,6 @@ typedef struct swtch
     uint16_t priorite;    //2 octets de pt fort
     association *tab_association; //malloc * TAILLE NB PORTS
     int port_utilises; // compteur 
-    adresse_MAC tab_voisins[];  //j'ai oublié son utilité jpp 
 } swtch;
 
 typedef enum typeEquipement{

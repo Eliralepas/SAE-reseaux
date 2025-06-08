@@ -5,8 +5,9 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include "machines.h" 
-#include "reseaux.h"
+#include "reseau.h"
 #include "tramway.h"
+#include "machines.h"
 
 typedef enum Protocole{
     ICMP = 1
@@ -15,8 +16,8 @@ typedef enum Protocole{
 typedef struct paquet_IP{
     uint8_t TTL;
     Protocole p;
-    Adresse_IP src;
-    Adresse_IP dst;
+    adresse_IP src;
+    adresse_IP dst;
     void* donnees;
 } paquet_IP;
 
