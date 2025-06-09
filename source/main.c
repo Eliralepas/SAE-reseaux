@@ -1,46 +1,41 @@
+#include <stdio.h>
+#include <stdlib.h>
 #include "machines.h"
 #include "reseau.h"
+#include "tramway.h"
+#include "paquet_IP.h"
 
-int main(){
-    //char* str;
-    //station *statio;
-    //init_station(statio);
-    //mac_to_str((statio->st_MAC), str);
+int main() {
+    reseau r;
+    init_reseau(&r);
 
-    char *str = (char *)malloc(18 * sizeof(char)); // Allocate memory for the MAC address string
-    if (str == NULL) {
-        // Handle memory allocation failure
-        return -1;
+    if (charger_reseau("fichier.txt", &r) != 0) {
+        fprintf(stderr, "Erreur : impossible de charger le réseau\n");
+        return EXIT_FAILURE;
     }
 
-    station *statio = (station *)malloc(sizeof(station)); // Allocate memory for the station
-    if (statio == NULL) {
-        // Handle memory allocation failure
-        free(str); // Free the previously allocated memory
-        return -1;
+    affichage_reseau(&r);
+
+    machine *stA = &r.machines[0];
+    machine *stB = &r.machines[1];
+
+    station *sta = (station *)stA->equipement;
+    station *stb = (station *)stB->equipement;
+
+    trame *t = creation_trame(sta->st_MAC, stb->st_MAC, sta->st_IP, stb->st_IP, PING, ICMP_ECHO_REQUEST);
+    if (!t) {
+        fprintf(stderr, "Erreur : échec de création de la trame\n");
+        deinit_reseau(&r);
+        return EXIT_FAILURE;
     }
 
-    init_station(statio);
-    mac_to_str(statio->st_MAC, str);
+    printf("\n=== Début de la simulation d'envoi ===\n");
+    send_trame(t, &r);
+    printf("=== Fin de la simulation ===\n");
 
-    printf("MAC Address: %s\n", str); // Print the MAC address
-
-    // Free allocated memory
-    free(str);
-    free(statio);
-    
-    reseau *r = malloc(sizeof(reseau));
-    init_reseau(r);
-    if (charger_reseau("fichier.txt", r) == ERROR) 
-    {
-        fprintf(stderr, "Échec du chargement du réseau\n");
-        free(r);
-        return -1;
-    }
-    affichage_reseau(r);
-    deinit_reseau(r);
-    free(r);
+    deinit_tram(t);
+    free(t);
+    deinit_reseau(&r);
 
     return 0;
 }
-

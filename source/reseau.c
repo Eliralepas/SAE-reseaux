@@ -16,6 +16,39 @@ void init_reseau(reseau *r)
     r->aretes_capacite = 0;
 }
 
+void deinit_reseau(reseau *r) {
+    if (r == NULL) return;
+    
+    // libération des machines
+    for (size_t i = 0; i < r->nbr_machines; i++) {
+        machine *m = &r->machines[i];
+        if (m->tp_equip == TYPE_SWITCH && m->equipement != NULL) {
+            swtch *sw = (swtch*) m->equipement;
+            deinit_switch(sw);
+            free(sw);
+            m->equipement = NULL;
+        }
+        else if (m->tp_equip == TYPE_STATION && m->equipement != NULL){
+            station *st = (station*) m->equipement;
+            deinit_station(st);
+            free(st);
+            m->equipement = NULL;
+        }
+    }
+    r->nbr_machines=0;
+    if (r->machines != NULL) {
+        free(r->machines);
+        r->machines = NULL;
+    }
+    if (r->aretes != NULL) {
+        free(r->aretes);
+        r->aretes = NULL;
+    }
+    r->nbr_machines = 0;
+    r->nb_aretes = 0;
+    r->aretes_capacite=0;
+}
+
 //Lecture du fichier de configuration renvoie un structure reseau, si celui ci n'est pas possible alors renvoie null
 int charger_reseau(const char* nom_fichier, reseau* g) {
     FILE* fichier = fopen(nom_fichier, "r");
@@ -23,7 +56,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     //Si le fichier n'existe pas ou échec d'ouverture 
     if (fichier == NULL) {
         perror("Erreur d'ouverture du fichier");
-        return -1;
+        return ERROR;
     }
 
     int nb_machines;
@@ -31,9 +64,9 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     //lire des données de la première ligne 
     if (fscanf(fichier, "%u %d\n", &nb_machines, &nb_liens)!=2){
         //si ne lis pas 2 entiers pour la première ligne
-        perror("Erreur dans la lecture du fichier");
+        perror("Erreur dans la lecture du fichier: mauvais format");
         fclose(fichier);
-        return -1;
+        return ERROR;
     }
 
     //Initialisation de ma structure reseau
@@ -42,17 +75,17 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     g->aretes = malloc(nb_liens*sizeof(arete));
     if (!g->aretes) {
         perror("Erreur allocation aretes");
-        return -1;
+        return ERROR;
     }
     g->aretes_capacite = nb_liens;
     g->machines = malloc(nb_machines * sizeof(machine));
     if (!g->machines) {
         perror("Erreur allocation machines");
         free(g->aretes);
-        return -1;
+        return ERROR;
     }   
     
-    //config des machines a partir du fichier 
+    //configuration des machines a partir du fichier 
     for (int i = 0; i < nb_machines; i++) {
         //récupérer la ligne dans une variable ligne
         char ligne[MAX_BUFFER_SIZE];
@@ -72,7 +105,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         // [^;]	lit tout sauf ;
 
         if (nb != 4 && nb != 3) {
-            fprintf(stderr, "Ligne mal formée pour machine %d : %s\n", i, ligne);
+            printf("Ligne mal formée pour machine %d : %s\n", i, ligne);
             fclose(fichier);
             return ERROR;
         }
@@ -112,7 +145,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             m->equipement = sw;
         }
         else {
-            fprintf(stderr, "Type inconnu pour machine %d : %d\n", i, type);
+            printf("Type inconnu pour machine %d : %d\n", i, type);
             fclose(fichier);
             return ERROR;
         }
@@ -124,7 +157,6 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         int src;
         int dst; 
         int poids;
-        bool trv = false;
 
         if (fscanf(fichier, "%d;%d;%d\n", &src, &dst, &poids) != 3) {
             perror("Erreur de lecture des arêtes");
@@ -167,32 +199,6 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
                 return ERROR;
             }  
         }
-        // si deux switch 
-        else if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_SWITCH) {
-            swtch *sw1 = (swtch *)m1->equipement;
-            swtch *sw2 = (swtch *)m2->equipement;
-            if (sw1->port_utilises < sw1->nb_port) {
-                int port1 = sw1->port_utilises;
-                sw1->tab_association[port1].port = port1;
-                sw1->tab_association[port1].st_MAC = sw2->sw_MAC;
-                sw1->port_utilises++;
-            }
-            else {
-                perror("Erreur : trop de connexions sur le switch\n");
-                return ERROR;
-            }  
-
-            if (sw2->port_utilises < sw2->nb_port) {
-                int port2 = sw2->port_utilises;
-                sw2->tab_association[port2].port = port2;
-                sw2->tab_association[port2].st_MAC = sw1->sw_MAC;
-                sw2->port_utilises++;
-            }
-            else {
-                perror("Erreur : trop de connexions sur le switch\n");
-                return ERROR;
-            }  
-        }
     }
     
     fclose(fichier);
@@ -203,9 +209,9 @@ void affichage_reseau(reseau *g){
     size_t nb = g->nbr_machines;
     printf("----------------RESEAU----------------\n");
     printf("Nombre de machines : \t%zu\n\n", nb);
-    for (int i=0; i<nb; i++){
+    for (size_t i=0; i<nb; i++){
         machine m = g->machines[i];
-        printf("-------------Machine n°%d-------------\n",i);
+        printf("-------------Machine n°%ld-------------\n",i);
         printf("Id de la machine : %d\n", m.id);
         if (m.tp_equip == TYPE_STATION)
         {
@@ -240,42 +246,40 @@ void affichage_reseau(reseau *g){
     }
     
     printf("---------------LIAISONS--------------\n");
-    for (int p=0; p<g->nb_aretes; p++){
+    for (size_t p=0; p<g->nb_aretes; p++){
         arete art = g->aretes[p];
         printf("%d --> %d : %ld\n", art.m1.id, art.m2.id, art.poids);
     }
 }
 
-void deinit_reseau(reseau *r) {
-    if (r == NULL) return;
-    
-    // libération des machines
-    for (int i = 0; i < r->nbr_machines; i++) {
-        machine *m = &r->machines[i];
-        if (m->tp_equip == TYPE_SWITCH && m->equipement != NULL) {
-            swtch *sw = (swtch*) m->equipement;
-            deinit_switch(sw);
-            free(sw);
-            m->equipement = NULL;
-        }
-        else if (m->tp_equip == TYPE_STATION && m->equipement != NULL){
-            station *st = (station*) m->equipement;
-            deinit_station(st);
-            free(st);
-            m->equipement = NULL;
+
+int nb_voisin(machine *m, reseau *r) {
+    if (m==NULL || r==NULL) return -1;
+
+    int count = 0;
+    for (size_t i = 0; i < r->nb_aretes; i++) {
+
+        if (r->aretes[i].m1.id == m->id || r->aretes[i].m2.id == m->id){
+            count++;
         }
     }
-    r->nbr_machines=0;
-    if (r->machines != NULL) {
-        free(r->machines);
-        r->machines = NULL;
-    }
-    if (r->aretes != NULL) {
-        free(r->aretes);
-        r->aretes = NULL;
-    }
-    r->nbr_machines = 0;
-    r->nb_aretes = 0;
-    r->aretes_capacite=0;
+    return count;
 }
 
+void tab_voisin(machine *m, machine voisins[], reseau *r) {
+    if (m == NULL || r==NULL) return;
+
+    size_t index = 0;
+    for (size_t i = 0; i < r->nb_aretes; i++) {
+        arete a = r->aretes[i];
+
+        if (a.m1.id == m->id) {
+            voisins[index] = a.m2;
+            index++;
+        } 
+        else if (a.m2.id == m->id) {
+            voisins[index] = a.m1;
+            index++;
+        }
+    }
+}

@@ -25,8 +25,10 @@ typedef struct reseau
 } reseau;
 
 void init_reseau(reseau *r);
+void deinit_reseau(reseau *r);
+
 int charger_reseau(const char* nom_fichier, reseau* g);
 void affichage_reseau(reseau *g);
-void deinit_reseau(reseau *r);
-size_t nb_voisin(reseau *r, machine *m);
-void machine_voisin(machine ma[], machine *m, reseau *r);
+
+int nb_voisin(machine *m, reseau *r);
+void tab_voisin(machine *m, machine voisins[], reseau *r);

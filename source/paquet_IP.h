@@ -4,17 +4,17 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include <string.h>
+
 #include "machines.h" 
 #include "reseau.h"
-#include "tramway.h"
 #include "machines.h"
 
 typedef enum Protocole{
-    ICMP = 1
+    ICMP
 } Protocole;
 
 typedef struct paquet_IP{
-    uint8_t TTL;
     Protocole p;
     adresse_IP src;
     adresse_IP dst;
@@ -30,3 +30,8 @@ typedef enum Type{
 typedef struct paquet_ICMP{
     Type type;
 }paquet_ICMP;
+
+void deinit_paquet_ip(paquet_IP *pkt);
+void init_paquet_ip(paquet_IP* pkt, Protocole protocole, adresse_IP src, adresse_IP dst, void* donnees);
+paquet_IP* creation_paquet_ip(adresse_IP src, adresse_IP dst, Protocole proto, void* data, size_t data_len);
+paquet_ICMP* creation_paquet_icmp(Type tp);
