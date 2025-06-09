@@ -21,7 +21,7 @@ void init_switch(swtch *sw){
     memset(sw->sw_MAC.mac, 0, 6);
     sw->nb_port = 16; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
-    sw->tab_association = (sizeof(association) * sw->nb_port);
+    sw->tab_association = malloc(sizeof(association) * sw->nb_port);
     //tab voisin mais on a oublié son utilité MDRRR...
 }
 
