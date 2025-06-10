@@ -10,8 +10,7 @@
 #include "paquet_IP.h"
 
 typedef struct bpdu{
-    uint16_t root_id;
-    uint16_t bridge_id;
-    uint8_t  port_id;
+    uint64_t root_id;
+    uint64_t bridge_id;
     uint8_t  cost;
 } bpdu;

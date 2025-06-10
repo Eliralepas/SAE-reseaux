@@ -33,12 +33,19 @@ typedef struct swtch
     uint16_t priorite;    //2 octets de pt fort
     association *tab_association; //malloc * TAILLE NB PORTS
     int port_utilises; // compteur 
+    etatPort* port_etat;
 } swtch;
 
 typedef enum typeEquipement{
     TYPE_STATION,
     TYPE_SWITCH
 }typeEquipement;
+
+typedef enum etatPort{
+    DESIGNE,
+    RACINE, 
+    BLOQUE
+}etatPort;
 
 typedef struct machine{
     int id;

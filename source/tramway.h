@@ -11,7 +11,7 @@
 
 #define LONGUEUR_MAX_DATA
 
-typedef enum{
+typedef enum typeMessage{
     BPDU,
     PING
 }typeMessage;
