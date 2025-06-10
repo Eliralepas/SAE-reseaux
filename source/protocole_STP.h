@@ -9,8 +9,5 @@
 #include "reseau.h"
 #include "paquet_IP.h"
 
-typedef struct bpdu{
-    uint64_t root_id;
-    uint64_t bridge_id;
-    uint8_t  cost;
-} bpdu;
+void protocole_STP_chemin(reseau *r);
+uint8_t calcul_cout(reseau *r, machine *m, int* visites);

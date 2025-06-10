@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include "machines.h"
-
 #define ERROR 1
 #define SUCCESS 0
 

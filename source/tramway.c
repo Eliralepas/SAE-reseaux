@@ -172,9 +172,6 @@ void send_trame(trame *t, reseau *r) {
             break;
         }
     }
-    else if (t->tp==BPDU){
-
-    }
 
     //envoyer la trame aux voisins
     int nb = nb_voisin(src, r);
@@ -319,9 +316,6 @@ void receive_trame(trame *t, reseau *r) {
                 printf("ICMP inconnu.\n");
         }
     }
-    else if(t->tp == BPDU){         //A FAIRE
-
-    } 
     else {
         printf("Paquet IP avec protocole non supporté : %d\n", pkt->p);
     }

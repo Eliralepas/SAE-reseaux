@@ -30,6 +30,8 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    protocole_STP_chemin(&r);
+
     printf("\n=== Début de la simulation d'envoi ===\n");
     send_trame(t, &r);
     printf("=== Fin de la simulation ===\n");
@@ -37,9 +39,6 @@ int main() {
     deinit_tram(t);
     free(t);
     deinit_reseau(&r);
-
-
-    testConcat();
 
 
     return 0;
