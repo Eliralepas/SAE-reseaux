@@ -23,6 +23,10 @@ void init_switch(swtch *sw){
     sw->priorite = 0;
     sw->tab_association = malloc(sizeof(association) * sw->nb_port);
     sw->port_etat = malloc(sizeof(etatPort) * sw->nb_port);
+    sw->bridge_protocol.cost = 0;
+    sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
+    sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
+
     //tab voisin mais on a oublié son utilité MDRRR...
 }
 
@@ -51,3 +55,32 @@ void str_to_ip(adresse_IP * IP, char *str){
     sscanf(str, "%hhu.%hhu.%hhu.%hhu", &IP->ip[0], &IP->ip[1], &IP->ip[2], &IP->ip[3]);
 }
 
+u_int64_t concat_bridge_id(swtch *sw) {
+    return ((u_int64_t)sw->priorite << 48) |
+           ((u_int64_t)sw->sw_MAC.mac[0] << 40) |
+           ((u_int64_t)sw->sw_MAC.mac[1] << 32) |
+           ((u_int64_t)sw->sw_MAC.mac[2] << 24) |
+           ((u_int64_t)sw->sw_MAC.mac[3] << 16) |
+           ((u_int64_t)sw->sw_MAC.mac[4] << 8)  |
+           ((u_int64_t)sw->sw_MAC.mac[5] << 0)  ;  //ça me stressait les trucs | et le ; pas alignés
+}
+
+
+
+void testConcat(){
+    printf("test concat\n");
+    swtch commutateur;
+    init_switch(&commutateur);
+    commutateur.sw_MAC.mac[0]=1;
+    commutateur.sw_MAC.mac[1]=2;
+    commutateur.sw_MAC.mac[2]=4;
+    commutateur.sw_MAC.mac[3]=8;
+    commutateur.sw_MAC.mac[4]=16;
+    commutateur.sw_MAC.mac[5]=32;
+    commutateur.priorite=247;
+    uint64_t intTest = concat_bridge_id(&commutateur);
+    char *string;
+    mac_to_str(commutateur.sw_MAC, string);
+    printf(string);
+    printf("%zu", intTest);
+}

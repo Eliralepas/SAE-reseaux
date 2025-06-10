@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <sys/types.h>
+#include "protocole_STP.h"
 
 
 typedef u_int8_t octet;
@@ -33,7 +34,8 @@ typedef struct swtch
     uint16_t priorite;    //2 octets de pt fort
     association *tab_association; //malloc * TAILLE NB PORTS
     int port_utilises; // compteur 
-    etatPort* port_etat;
+    etatPort *port_etat;
+    bpdu bridge_protocol;
 } swtch;
 
 typedef enum typeEquipement{
@@ -63,3 +65,4 @@ void mac_to_str(adresse_MAC M, char *str);
 void ip_to_str(adresse_IP IP, char *str);
 void str_to_mac(adresse_MAC *M, char *str);
 void str_to_ip(adresse_IP *IP, char *str);
+void concat_bridge_id(swtch *sw);

@@ -4,6 +4,7 @@
 #include "reseau.h"
 #include "tramway.h"
 #include "paquet_IP.h"
+#include "protocole_STP.h"
 
 int main() {
     reseau r;
@@ -36,6 +37,10 @@ int main() {
     deinit_tram(t);
     free(t);
     deinit_reseau(&r);
+
+
+    testConcat();
+
 
     return 0;
 }
