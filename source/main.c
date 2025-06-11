@@ -30,7 +30,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    protocole_STP_chemin(&r);
+    //protocole_STP_chemin(&r);
 
     printf("\n=== Début de la simulation d'envoi ===\n");
     send_trame(t, &r);
