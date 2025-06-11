@@ -19,7 +19,7 @@ void protocole_STP_chemin(reseau *r){
         }
     }
 
-    printf("Le root racine = %lu (machine %d)\n", rootID, root_machine->id);
+    printf("Le root racine = %02lX (machine %d)\n", rootID, root_machine->id);
 
     //rajouter au bpdu le rootID trouvé pour chaque switch
     for (size_t i=0; i<r->nbr_machines; i++){
@@ -27,9 +27,6 @@ void protocole_STP_chemin(reseau *r){
         if (m->tp_equip == TYPE_SWITCH){
             swtch* sw = (swtch*) m->equipement;
             sw->bridge_protocol.root_id=rootID;
-
-            //cout = 0 qu'on écrasera après
-            sw->bridge_protocol.cost = 0;
         }
     }
 

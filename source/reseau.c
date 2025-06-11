@@ -143,6 +143,10 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             sw->tab_association = malloc(sizeof(association)*nombre);
             sw->port_utilises = 0;
             m->equipement = sw;
+            sw->port_etat = malloc(sizeof(etatPort)*sw->nb_port);
+            sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
+            sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
+            sw->bridge_protocol.cost = 0;
         }
         else {
             printf("Type inconnu pour machine %d : %d\n", i, type);
@@ -233,14 +237,7 @@ void affichage_reseau(reseau *g){
             printf("L'adresse MAC : %s\n", str);
             printf("Nombre de ports : %d\n", equip->nb_port);
             printf("La priorité : %u\n", equip->priorite);
-            printf("---------TABLEAU DE COMMUTATION---------\n");
-            for (int j=0; j<equip->port_utilises; j++){
-                char str1[18];
-                association asso = equip->tab_association[j];
-                mac_to_str(asso.st_MAC, str1);
-                printf("Addresse (%s) --> port %d\n", str1, asso.port);
-            }
-
+            affichage_tab_commutation(equip);
         }
         printf("\n");
     }
@@ -249,6 +246,21 @@ void affichage_reseau(reseau *g){
     for (size_t p=0; p<g->nb_aretes; p++){
         arete art = g->aretes[p];
         printf("%d --> %d : %ld\n", art.m1.id, art.m2.id, art.poids);
+    }
+}
+
+void affichage_tab_commutation(swtch *sw){
+    if(sw->port_utilises!=0){
+        printf("---------TABLEAU DE COMMUTATION---------\n");
+        for (int j=0; j<sw->port_utilises; j++){
+            char str1[18];
+            association asso = sw->tab_association[j];
+            mac_to_str(asso.st_MAC, str1);
+            printf("Addresse (%s) --> port %d\n", str1, asso.port);
+        }
+    }
+    else{
+        printf("Table vide\n");
     }
 }
 

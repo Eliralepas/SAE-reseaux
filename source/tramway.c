@@ -198,6 +198,8 @@ void send_trame(trame *t, reseau *r) {
                 sw->tab_association[sw->port_utilises].st_MAC = t->src;
                 sw->tab_association[sw->port_utilises].port = sw->port_utilises;
                 sw->port_utilises++;
+                printf("Table de commutation mise à jour (machine %d).\n", dest->id);
+                affichage_tab_commutation(sw);
             }
 
             //MAC dest connu ?

@@ -28,6 +28,7 @@ void deinit_reseau(reseau *r);
 
 int charger_reseau(const char* nom_fichier, reseau* g);
 void affichage_reseau(reseau *g);
+void affichage_tab_commutation(swtch *sw);
 
 int nb_voisin(machine *m, reseau *r);
 void tab_voisin(machine *m, machine voisins[], reseau *r);
