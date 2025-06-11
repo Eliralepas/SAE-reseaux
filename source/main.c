@@ -10,7 +10,7 @@ int main() {
     reseau r;
     init_reseau(&r);
 
-    if (charger_reseau("fichier.txt", &r) != 0) {
+    if (charger_reseau("./bin/fichier.txt", &r) != 0) {
         fprintf(stderr, "Erreur : impossible de charger le réseau\n");
         return EXIT_FAILURE;
     }
