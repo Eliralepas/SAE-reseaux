@@ -34,7 +34,7 @@ int main() {
     for (int i=0; i<r.nbr_machines; i++){
         machine *m = (machine*) &r.machines[i];
         if (m->tp_equip == TYPE_SWITCH){
-            sw = m->equipement;
+            sw = m;
         }
     }
 
