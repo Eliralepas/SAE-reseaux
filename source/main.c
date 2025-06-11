@@ -30,7 +30,20 @@ int main() {
         return EXIT_FAILURE;
     }
 
+    machine *sw = NULL;
+    for (int i=0; i<r.nbr_machines; i++){
+        machine *m = (machine*) &r.machines[i];
+        if (m->tp_equip == TYPE_SWITCH){
+            sw = m->equipement;
+        }
+    }
+
     //protocole_STP_chemin(&r);
+    int visite[r.nbr_machines];
+        for (int k=0; k<r.nbr_machines; k++){
+            visite[k]=0;
+    }
+    printf("%u",calcul_cout(&r, sw, visite));
 
     printf("\n=== Début de la simulation d'envoi ===\n");
     send_trame(t, &r);
