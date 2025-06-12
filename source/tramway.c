@@ -138,12 +138,15 @@ void affich_tram_hexa(trame *lixenbuhl){
 
     char src[18];
     char dest[18];
+    char ps[18];
 
     mac_to_str(lixenbuhl->src, src);
     mac_to_str(lixenbuhl->dest, dest);
+    mac_to_str(lixenbuhl->passerelle, ps);
+    
 
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
-    printf("%s : %s", src, dest);
+    printf("%s : %s\t passerelle : %s", src, dest, ps);
     for(size_t i = 0; i < lixenbuhl->data_length; i++){
         //printf("%02hhX:", octetlixenbuhl->data[i]);   //A FAIRE
     }
