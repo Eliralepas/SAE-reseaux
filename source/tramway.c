@@ -93,15 +93,17 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
 
     char src[18];
     char dest[18];
+    char ps[18];
 
     mac_to_str(etoile_bourse->src, src);
     mac_to_str(etoile_bourse->dest, dest);
+    mac_to_str(etoile_bourse->passerelle, ps);
 
     printf("----- Trame Ethernet (mode utilisateur) -----\n");
     printf("Adresse source      : %s\n", src);
     printf("Adresse destination : %s\n", dest);
     printf("Taille données      : %zu octets\n", etoile_bourse->data_length);
-    printf("Données             : \n");
+    printf("Données               \n");
     if (etoile_bourse->tp==PING){
         paquet_IP *pkt = (paquet_IP *)etoile_bourse->data;
         char ip_src_str[16], ip_dst_str[16];
@@ -111,6 +113,8 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
         printf("Protocole IP        : %s\n", pkt->p == ICMP ? "ICMP" : "Inconnu");
         printf("IP source           : %s\n", ip_src_str);
         printf("IP destination      : %s\n", ip_dst_str);
+        printf("Passerelle :        : %s\n", ps);
+
 
         if (pkt->p == ICMP) {
             paquet_ICMP *icmp = (paquet_ICMP *)pkt->donnees;
@@ -146,7 +150,7 @@ void affich_tram_hexa(trame *lixenbuhl){
     
 
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
-    printf("%s : %s\t passerelle : %s", src, dest, ps);
+    printf("%s - %s\t passerelle : %s", src, dest, ps);
     for(size_t i = 0; i < lixenbuhl->data_length; i++){
         //printf("%02hhX:", octetlixenbuhl->data[i]);   //A FAIRE
     }
