@@ -144,6 +144,9 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             sw->port_utilises = 0;
             m->equipement = sw;
             sw->port_etat = malloc(sizeof(etatPort)*sw->nb_port);
+            for (int p = 0; p<sw->nb_port; p++){
+                sw->port_etat[p] = DESIGNE;
+            }
             sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
             sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
             sw->bridge_protocol.cost = 0;

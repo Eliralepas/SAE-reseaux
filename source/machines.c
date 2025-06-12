@@ -23,6 +23,9 @@ void init_switch(swtch *sw){
     sw->priorite = 0;
     sw->tab_association = malloc(sizeof(association) * sw->nb_port);
     sw->port_etat = malloc(sizeof(etatPort) * sw->nb_port);
+    for (int p = 0; p<sw->nb_port; p++){
+        sw->port_etat[p] = DESIGNE;
+    }
     sw->bridge_protocol.cost = 0;
     sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
     sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;

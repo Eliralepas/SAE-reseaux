@@ -6,7 +6,7 @@ void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
     const machine source, const machine destination){
     adresse_MAC dest; 
     adresse_MAC src;
-    
+
     //Adresse MAC DESTINATION
     if(destination.tp_equip == TYPE_STATION){
         station* mach = (station*) destination.equipement;
@@ -16,16 +16,19 @@ void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
         swtch* mach = (swtch*) destination.equipement;
         dest = mach->sw_MAC;
     }
+    krimmeri_stade_de_la_meinau->dest = dest;
 
     //Adresse MAC SOURCE
     if(source.tp_equip == TYPE_STATION){
         station* mach = (station*) source.equipement;
-        dest = mach->st_MAC;
+        src = mach->st_MAC;
     }
     else{
         swtch* mach = (swtch*) source.equipement;
-        dest = mach->sw_MAC;
+        src = mach->sw_MAC;
     }
+    krimmeri_stade_de_la_meinau->src = src;
+    memcpy(krimmeri_stade_de_la_meinau->passerelle.mac, src.mac, sizeof(adresse_MAC));
 
     //Longueur et allocation de Data
     if(numero_dabonnement > MAX_DATA_SIZE){
@@ -39,6 +42,7 @@ void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
 void deinit_tram(trame *parc_des_sports){
     memset(parc_des_sports->dest.mac, 0, 6);
     memset(parc_des_sports->src.mac, 0, 6);
+    memset(parc_des_sports->passerelle.mac, 0, 6);
     if (parc_des_sports->data != NULL) {
         deinit_paquet_ip((paquet_IP*)parc_des_sports->data);
     }
@@ -48,7 +52,7 @@ void deinit_tram(trame *parc_des_sports){
     parc_des_sports->data = NULL;
 }
 
-trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_IP src_ip, adresse_IP dst_ip, typeMessage tpMessage, Type icmp_type) {
+trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_MAC passerelle, adresse_IP src_ip, adresse_IP dst_ip, typeMessage tpMessage, Type icmp_type) {
     trame* t = malloc(sizeof(trame));
     if (t==NULL) {
         perror("Erreur d'allocation pour la trame\n");
@@ -57,6 +61,7 @@ trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_IP src_i
 
     t->src = src_mac;
     t->dest = dst_mac;
+    t->passerelle = passerelle;
     t->tp = tpMessage;
     t->data = NULL;
     t->data_length = 0;
@@ -96,9 +101,34 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
     printf("Adresse source      : %s\n", src);
     printf("Adresse destination : %s\n", dest);
     printf("Taille données      : %zu octets\n", etoile_bourse->data_length);
-    printf("Données             : ");
-    for (size_t i = 0; i < etoile_bourse->data_length; i++) {
-        //printf("%02hhX:", etoile_bourse->data[i]);        //A FAIRE
+    printf("Données             : \n");
+    if (etoile_bourse->tp==PING){
+        paquet_IP *pkt = (paquet_IP *)etoile_bourse->data;
+        char ip_src_str[16], ip_dst_str[16];
+        ip_to_str(pkt->src, ip_src_str);
+        ip_to_str(pkt->dst, ip_dst_str);
+
+        printf("Protocole IP        : %s\n", pkt->p == ICMP ? "ICMP" : "Inconnu");
+        printf("IP source           : %s\n", ip_src_str);
+        printf("IP destination      : %s\n", ip_dst_str);
+
+        if (pkt->p == ICMP) {
+            paquet_ICMP *icmp = (paquet_ICMP *)pkt->donnees;
+            printf("Type ICMP           : ");
+            switch (icmp->type) {
+                case ICMP_ECHO_REQUEST:
+                    printf("Echo Request (Ping)\n");
+                    break;
+                case ICMP_ECHO_REPLY:
+                    printf("Echo Reply (Pong)\n");
+                    break;
+                case ICMP_DEST_UNREACHABLE:
+                    printf("Destination Unreachable\n");
+                    break;
+                default:
+                    printf("Inconnu (%d)\n", icmp->type);
+            }
+        }
     }
     printf("\n---------------------------------------------\n");
 }
@@ -113,6 +143,7 @@ void affich_tram_hexa(trame *lixenbuhl){
     mac_to_str(lixenbuhl->dest, dest);
 
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
+    printf("%s : %s", src, dest);
     for(size_t i = 0; i < lixenbuhl->data_length; i++){
         //printf("%02hhX:", octetlixenbuhl->data[i]);   //A FAIRE
     }
@@ -120,122 +151,107 @@ void affich_tram_hexa(trame *lixenbuhl){
 }
 
 void send_trame(trame *t, reseau *r) {
-    if (t==NULL || r==NULL) return;
-
-    //trouver la machine source pour le tableau de voisin
-    machine *src = NULL;
-    for (size_t i = 0; i < r->nbr_machines; i++){
-        machine *m = &r->machines[i];
-
-        if (m->tp_equip == TYPE_STATION) {
-            station *st = (station *)m->equipement;
-            if (memcmp(st->st_MAC.mac, t->src.mac, 6) == 0) {
-                src = m;
-                break;
-            }
-        } else if (m->tp_equip == TYPE_SWITCH) {
-            swtch *sw = (swtch *)m->equipement;
-            if (memcmp(sw->sw_MAC.mac, t->src.mac, 6) == 0) {
-                src = m;
-                break;
-            }
-        }
-    }
-
-    if (src==NULL){
-        printf("Erreur : machine source introuvable.\n");
+    if (t == NULL || r == NULL) {
+        perror("Erreur: trame ou réseau invalide\n");
         return;
     }
 
-    //décodage par rapport type du message
-    if (t->tp == PING){
-        paquet_IP* pkt = (paquet_IP*) t->data;
-        paquet_ICMP* icmp = (paquet_ICMP*) pkt->donnees;
-        switch (icmp->type)
-        {
-        case ICMP_ECHO_REQUEST:
-            char str[16];
-            ip_to_str(pkt->dst, str);
-            printf("Envoie d'une requête 'Ping' %s avec %ld octets de données :\n", str, t->data_length);
-            break;
-        
-        case ICMP_ECHO_REPLY:
-            ip_to_str(pkt->dst, str);
-            printf("Réponse de %s\n", str);
-            break;  
-        
-        case ICMP_DEST_UNREACHABLE: 
-            printf("Destination introuvable.\n");
-            break;
-        
-        default:
+    //on cherche la machine passerelle dans le réseau
+    machine *ps = NULL;
+    for (size_t i = 0; i < r->nbr_machines; i++) {
+        machine *m = &r->machines[i];
+        if ((m->tp_equip == TYPE_STATION && memcmp(((station*)m->equipement)->st_MAC.mac, t->passerelle.mac, 6) == 0) ||
+            (m->tp_equip == TYPE_SWITCH && memcmp(((swtch*)m->equipement)->sw_MAC.mac, t->passerelle.mac, 6) == 0)) {
+            ps = m;
             break;
         }
     }
 
-    //envoyer la trame aux voisins
-    int nb = nb_voisin(src, r);
-    machine voisins [nb];
-    tab_voisin(src, voisins, r);
+    if (ps == NULL) {
+        perror("Erreur: machine source introuvable\n");
+        return;
+    }
 
-    for (int i = 0; i < nb; i++) {
-        machine *dest = &voisins[i];
+    //afficher le message ICMP
+    if (t->tp == PING && t->data != NULL) {
+        paquet_IP *pkt = (paquet_IP *)t->data;
+        if (pkt->p == ICMP && pkt->donnees != NULL) {
+            paquet_ICMP *icmp = (paquet_ICMP *)pkt->donnees;
+            char ip_str[16];
+            ip_to_str(pkt->dst, ip_str);
 
-        //si le destinataire est un switch -> propager la trame
-        if (dest->tp_equip == TYPE_SWITCH) {
-            swtch *sw = (swtch *)dest->equipement;
-
-            //MAC source connu par la switch ??
-            bool connu = false;
-            for (int j = 0; j < sw->port_utilises; j++) {
-                if (memcmp(sw->tab_association[j].st_MAC.mac, t->src.mac, 6) == 0){
-                    connu = true;
-                    break;
-                }
+            char mac_pas[16];
+            mac_to_str(t->passerelle, mac_pas);
+            
+            if (icmp->type == ICMP_ECHO_REQUEST) {
+                printf(">>> Envoi Ping vers %s... de %s\n", ip_str, mac_pas);
+            } else if (icmp->type == ICMP_ECHO_REPLY) {
+                printf(">>> Réponse Ping de %s\n", ip_str);
             }
-            //s'il ne le connait pas on le rajoute a la tab de commutation
-            if (!connu && sw->port_utilises < sw->nb_port) {
-                sw->tab_association[sw->port_utilises].st_MAC = t->src;
-                sw->tab_association[sw->port_utilises].port = sw->port_utilises;
-                sw->port_utilises++;
-                printf("Table de commutation mise à jour (machine %d).\n", dest->id);
-                affichage_tab_commutation(sw);
+        }
+    }
+
+    // Vérifier si la destination est connue
+    bool dest_connue = false;
+    int port_dest = -1;
+
+    //on trouve le port
+    if(ps->tp_equip == TYPE_SWITCH){
+        swtch* sw_ps = (swtch*) ps->equipement;
+        int p=0;
+        while (!dest_connue && p < sw_ps->port_utilises){
+            if (memcmp(sw_ps->tab_association[p].st_MAC.mac, t->dest.mac, 6) == 0) {
+                dest_connue = true;
+                port_dest = sw_ps->tab_association[p].port;
             }
+            p++;
+        }
+        
+        // si destination connue et port actifc
+        if (dest_connue && sw_ps->port_etat[port_dest] != BLOQUE) {
+            printf("TRANSMETTEUR : Switch %d vers port %d (MAC connu)\n", ps->id, port_dest);
+            receive_trame(t, r);
+        }
+        else{
+            int nb_voisins = nb_voisin(ps, r);
+            machine voisins[nb_voisins];
+            tab_voisin(ps, voisins, r);
 
-            //MAC dest connu ?
-            bool mac_dest_connue = false;
-            for (int j = 0; j < sw->port_utilises; j++) {
-                if (memcmp(sw->tab_association[j].st_MAC.mac, t->dest.mac, 6) == 0){
-                    mac_dest_connue = true;
-                    break;
-                }
-            }
-
-            if (mac_dest_connue) {
-                //on l'envoie au bon voisin
-                receive_trame(t, r);
-            } 
-            else {
-                // Diffusion : le switch envoie à tous ses voisins sauf la source
-                int nb_sw = nb_voisin(dest, r);
-                machine voisins_sw [nb_sw];
-                tab_voisin(dest, voisins_sw, r);
-
-                for (int k = 0; k < nb_sw; k++) {
-                    if (voisins_sw[k].id != src->id) {
-                        receive_trame(t, r); //propager à tous sauf retour source !!
+            //on parcourt ses voisins
+            for (int i=0; i<nb_voisins; i++){
+                machine *voisin = &voisins[i];
+                if (voisin->tp_equip == TYPE_SWITCH) {
+                    swtch * sw_voisin = (swtch*) voisin->equipement;
+                    printf(">>> BROADCAST : Switch %d\n", voisin->id);
+                    t->passerelle = sw_voisin->sw_MAC;
+                    for (int j = 0; j < sw_voisin->nb_port; j++) {
+                        if (sw_voisin->port_etat[j] != BLOQUE && memcmp(t->passerelle.mac, sw_ps->sw_MAC.mac, 6)!=0) {
+                            send_trame(t, r);
+                        }
                     }
                 }
             }
+        }
+    }
+    else if (ps->tp_equip == TYPE_STATION) {
+        for (size_t i = 0; i < r->nb_aretes; i++) {
+            arete a = r->aretes[i];
 
-        } 
-        else {
-            //destinataire est une station ? on essaie de lui envoyer directement
-            receive_trame(t, r);
+            if (a.m1.id == ps->id){
+                machine *m_voisin = &a.m2;
+                t->passerelle = ((swtch*)m_voisin->equipement)->sw_MAC;
+                send_trame(t, r);
+            }
+            else if (a.m2.id == ps->id)
+            {
+                machine *m_voisin = &a.m1;
+                t->passerelle = ((swtch*)m_voisin->equipement)->sw_MAC;
+                send_trame(t, r);
+            }
+            
         }
     }
 }
-
 
 
 void receive_trame(trame *t, reseau *r) {
@@ -265,15 +281,15 @@ void receive_trame(trame *t, reseau *r) {
         return;
     }
 
-    //printf("Machine %d a reçu une trame !\n", dest_machine->id);
-    //affich_tram_utilisasteur(t);
+    printf("Machine %d a reçu une trame !\n", dest_machine->id);
+  
 
     paquet_IP* pkt = (paquet_IP*) t->data;
     if (pkt->p == ICMP) {
         paquet_ICMP *icmp = (paquet_ICMP*) pkt->donnees;
         switch (icmp->type) {
             case ICMP_ECHO_REQUEST:
-                printf("Reçu un ICMP ECHO REQUEST (ping).\n");
+                printf("\n=======Reçu un ICMP ECHO REQUEST (ping).=======\n\n");
 
                 //inverser adresses
                 adresse_MAC mac_src_reply;
@@ -296,8 +312,7 @@ void receive_trame(trame *t, reseau *r) {
                 ip_dst_reply = pkt->src;
 
                 // Créer trame de réponse (pong)
-                trame *reply = creation_trame(mac_src_reply, mac_dst_reply, ip_src_reply, ip_dst_reply, PING, ICMP_ECHO_REPLY);
-
+                trame *reply = creation_trame(mac_src_reply, mac_dst_reply, mac_src_reply ,ip_src_reply, ip_dst_reply, PING, ICMP_ECHO_REPLY);
                 if (reply==NULL) {
                     perror("Erreur lors de la création du pong.\n");
                     break;
@@ -309,10 +324,10 @@ void receive_trame(trame *t, reseau *r) {
                 break;
 
             case ICMP_ECHO_REPLY:
-                printf("Reçu un ICMP ECHO REPLY (pong).\n");
+                printf("\n=======Reçu un ICMP ECHO REPLY (pong).=======\n\n");
                 break;
             case ICMP_DEST_UNREACHABLE:
-                printf("Reçu ICMP DESTINATION UNREACHABLE.\n");
+                printf("\n=======Reçu ICMP DESTINATION UNREACHABLE.=======\n\n");
                 break;
             default:
                 printf("ICMP inconnu.\n");

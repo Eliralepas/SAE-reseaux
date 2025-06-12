@@ -17,7 +17,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 CFLAGS ?= $(INC_FLAGS) -MMD -MP -O3
 DEBUG_CFLAGS ?= $(INC_FLAGS) -MMD -MP -g -O0
 
-$(TARGET_DIR)/$(TARGET_EXEC): $(OBJS)
+$(TARGET_DIR)/$(TARGET_EXEC): $(OBJS) $(TARGET_DIR)/no_cycle.txt $(TARGET_DIR)/cycle.txt $(TARGET_DIR)/fichier.txt
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
@@ -34,10 +34,21 @@ $(DEBUG_DIR)/%.c.o: %.c
 	$(CC) $(DEBUG_CFLAGS) -c $< -o $@
 
 # Règle pour copier fichier.txt vers le répertoire bin
+$(TARGET_DIR)/no_cycle.txt: $(SRC_DIRS)/no_cycle.txt
+	$(MKDIR_P) $(TARGET_DIR)
+	cp $< $@
+
+$(TARGET_DIR)/cycle.txt: $(SRC_DIRS)/cycle.txt
+	$(MKDIR_P) $(TARGET_DIR)
+	cp $< $@
+
 $(TARGET_DIR)/fichier.txt: $(SRC_DIRS)/fichier.txt
 	$(MKDIR_P) $(TARGET_DIR)
 	cp $< $@
 
+# Ajoutez la copie de fichier.txt comme dépendance à la cible principale
+$(TARGET_DIR)/$(TARGET_EXEC): $(TARGET_DIR)/cycle.txt
+$(TARGET_DIR)/$(TARGET_EXEC): $(TARGET_DIR)/no_cycle.txt
 # Règle pour copier fichier.txt pour le debug
 $(DEBUG_DIR)/fichier.txt: $(SRC_DIRS)/fichier.txt
 	$(MKDIR_P) $(DEBUG_DIR)
