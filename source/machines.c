@@ -16,12 +16,13 @@ void deinit_station(station *st){
     memset(st->st_MAC.mac, 0, 6);
 }
 
-void init_switch(swtch *sw){
+void init_switch(swtch *sw, int nb_equip){
     if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
     sw->nb_port = 16; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
-    sw->tab_association = malloc(sizeof(association) * sw->nb_port);
+    sw->nb_asso = 0;
+    sw->tab_association = malloc(sizeof(association) * (nb_equip-1));
     sw->port_etat = malloc(sizeof(etatPort) * sw->nb_port);
     for (int p = 0; p<sw->nb_port; p++){
         sw->port_etat[p] = DESIGNE;
@@ -29,7 +30,7 @@ void init_switch(swtch *sw){
     sw->bridge_protocol.cost = 0;
     sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
     sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
-
+    
     //tab voisin mais on a oublié son utilité MDRRR...
 }
 

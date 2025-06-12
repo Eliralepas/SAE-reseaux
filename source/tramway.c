@@ -2,6 +2,8 @@
 
 #define MAX_DATA_SIZE 1500
 
+bool send_trame(reseau *r, trame *t, machine* equip, int port_recep);
+
 void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
     const machine source, const machine destination){
     adresse_MAC dest; 
@@ -157,193 +159,159 @@ void affich_tram_hexa(trame *lixenbuhl){
     printf("\n---------------------------------------------\n");
 }
 
-void send_trame(trame *t, reseau *r) {
-    if (t == NULL || r == NULL) {
-        perror("Erreur: trame ou réseau invalide\n");
+void envoie_trame(reseau *r, trame *t){
+    bool machine1_existe = false;
+    int id_src = -1;
+    bool machine2_existe = false;
+
+    //parcourir les machines
+    for(int i=0; i<r->nbr_machines; i++){
+        machine* m = &r->machines[i];
+        if(m->tp_equip == TYPE_STATION){
+            station * st = (station*) m->equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                machine1_existe = true;
+                id_src = m->id;
+            }
+            else if(memcmp(st->st_MAC.mac, t->dest.mac, 6)==0){
+                machine2_existe = true;
+            }
+        }
+    }
+
+    if(!machine1_existe || !machine2_existe){
+        perror("Erreur : une des deux machines n'existe pas\n");
         return;
     }
 
-    //on cherche la machine passerelle dans le réseau
-    machine *ps = NULL;
-    for (size_t i = 0; i < r->nbr_machines; i++) {
-        machine *m = &r->machines[i];
-        if ((m->tp_equip == TYPE_STATION && memcmp(((station*)m->equipement)->st_MAC.mac, t->passerelle.mac, 6) == 0) ||
-            (m->tp_equip == TYPE_SWITCH && memcmp(((swtch*)m->equipement)->sw_MAC.mac, t->passerelle.mac, 6) == 0)) {
-            ps = m;
+    //trouve le switch connecté à la station source
+    machine *m = NULL;
+    swtch *sw = NULL;
+    for (int i=0; i<r->nb_aretes; i++){
+        arete art = r->aretes[i];
+        machine m1 = art.m1;
+        machine m2 = art.m2;
+        if (m1.tp_equip == TYPE_STATION){
+            station* st = (station*) m1.equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                m = &art.m2;
+                sw = (swtch*) &art.m2.equipement;
+            }
+        }
+        else if(m2.tp_equip == TYPE_STATION){
+            station* st = (station*) m2.equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                m = &art.m1;
+                sw = (swtch*) &art.m1.equipement;
+            }
+        }
+    }
+
+    if(sw == NULL){
+        perror("Erreur : pas de switch connecté à la source\n");
+        return;
+    }
+
+    //cherche le port du switch de réception
+    int port=-1;
+    for(int i=0; i<sw->port_utilises; i++){
+        if(sw->connectes[i] == id_src){
+            port = i;
             break;
         }
     }
 
-    if (ps == NULL) {
-        perror("Erreur: machine source introuvable\n");
-        return;
+    bool essai = send_trame(r, t, m, port);
+
+    if(essai){
+        printf("C'est good\n");
+    }
+    else{
+        printf("La trame n'est pas arrivée\n");
     }
 
-    //afficher le message ICMP
-    if (t->tp == PING && t->data != NULL) {
-        paquet_IP *pkt = (paquet_IP *)t->data;
-        if (pkt->p == ICMP && pkt->donnees != NULL) {
-            paquet_ICMP *icmp = (paquet_ICMP *)pkt->donnees;
-            char ip_str[16];
-            ip_to_str(pkt->dst, ip_str);
+}
 
-            char mac_pas[16];
-            mac_to_str(t->passerelle, mac_pas);
-            
-            if (icmp->type == ICMP_ECHO_REQUEST) {
-                printf(">>> Envoi Ping vers %s... de %s\n", ip_str, mac_pas);
-            } else if (icmp->type == ICMP_ECHO_REPLY) {
-                printf(">>> Réponse Ping de %s\n", ip_str);
-            }
-        }
-    }
-
-    // Vérifier si la destination est connue
-
-    //on trouve le port
-    if(ps->tp_equip == TYPE_SWITCH){
-        bool dest_connue = false;
-        int port_dest = -1;
-
-        swtch* sw_ps = (swtch*) ps->equipement;
-        int p=0;
-
-        while (!dest_connue && p < sw_ps->port_utilises){
-            if (memcmp(sw_ps->tab_association[p].st_MAC.mac, t->dest.mac, 6) == 0) {
-                dest_connue = true;
-                port_dest = sw_ps->tab_association[p].port;
-            }
-            p++;
-        }
-        
-        // si destination connue et port actifc
-        if (dest_connue && sw_ps->port_etat[port_dest] != BLOQUE) {
-            printf("TRANSMETTEUR : Switch %d vers port %d (MAC connu)\n", ps->id, port_dest);
-            receive_trame(t, r);
+bool send_trame(reseau *r, trame* t, machine *equip, int port_recep){
+    if(equip->tp_equip == TYPE_STATION){
+        station * st = (station*) equip->equipement;
+        if(memcmp(t->dest.mac, st->st_MAC.mac, 6)==0){
+            printf("c'est bon\n");
+            return true;
         }
         else{
-            int nb_voisins = nb_voisin(ps, r);
-            machine voisins[nb_voisins];
-            tab_voisin(ps, voisins, r);
+            printf("c'est aps pour moi\n");
+            return false;
+        }
+    }
 
-            //on parcourt ses voisins
-            for (int i=0; i<nb_voisins; i++){
-                machine *voisin = &voisins[i];
-                if (voisin->tp_equip == TYPE_SWITCH) {
-                    swtch * sw_voisin = (swtch*) voisin->equipement;
-                    printf(">>> BROADCAST : Switch %d\n", voisin->id);
-                    t->passerelle = sw_voisin->sw_MAC;
-                    for (int j = 0; j < sw_voisin->nb_port; j++) {
-                        if (sw_voisin->port_etat[j] != BLOQUE && memcmp(t->passerelle.mac, sw_ps->sw_MAC.mac, 6)!=0) {
-                            send_trame(t, r);
+    bool existe_asso_src = false;
+    int port=-1;
+    swtch *sw = (swtch*) equip->equipement;
+    for (int i=0; i<sw->nb_asso; i++){
+        if(memcmp(sw->tab_association[i].st_MAC.mac, t->src.mac, 6)==0){
+            existe_asso_src = true;
+            port = sw->tab_association[i].port;
+            break;
+        }
+
+    }
+    
+    if(!existe_asso_src){
+        //creer une nouvelle asso 
+        sw->tab_association[sw->nb_asso] = (association) {t->src.mac, port};
+        sw->nb_asso++;
+    }
+
+    bool existe_asso_dest = false;
+    int port_suivant=-1;
+    for (int i=0; i<sw->nb_asso; i++){
+        if(memcmp(sw->tab_association[i].st_MAC.mac, t->dest.mac, 6)==0){
+            existe_asso_dest = true;
+            port_suivant = sw->tab_association[i].port;
+            break;
+        }
+    }
+
+    if(existe_asso_dest){
+        int id_suivant = sw->connectes[port_suivant];
+        machine *equip_suivant = &r->machines[id_suivant];
+        int port = 0;
+        if(equip_suivant->tp_equip == TYPE_SWITCH){
+            swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+            for (int i=0; i<sw_suivant->port_utilises; i++){
+                if(sw_suivant->connectes[i] == equip->id){
+                    port = i;
+                    break;
+                }
+            }
+        }
+
+        return send_trame(r, t, equip_suivant, port);
+    }
+    else{
+        for(int i=0; i < sw->port_utilises; i++){
+            if(i!=port_recep){
+                int id_suivant = sw->connectes[i];
+                machine *equip_suivant = &r->machines[id_suivant];
+                int port = 0;
+                if(equip_suivant->tp_equip == TYPE_SWITCH){
+                    swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+                    for (int i=0; i<sw_suivant->port_utilises; i++){
+                        if(sw_suivant->connectes[i] == equip->id){  //verif si le switch est bloqué
+                            port = i;
+                            break;
                         }
                     }
                 }
-            }
-        }
-    }
-    else if (ps->tp_equip == TYPE_STATION) {
-        for (size_t i = 0; i < r->nb_aretes; i++) {
-            arete a = r->aretes[i];
 
-            if (a.m1.id == ps->id){
-                machine *m_voisin = &a.m2;
-                t->passerelle = ((swtch*)m_voisin->equipement)->sw_MAC;
-                send_trame(t, r);
+                bool essaie = send_trame(r, t, equip_suivant, port);
+                if(essaie){
+                    return true;
+                }   
             }
-            else if (a.m2.id == ps->id)
-            {
-                machine *m_voisin = &a.m1;
-                t->passerelle = ((swtch*)m_voisin->equipement)->sw_MAC;
-                send_trame(t, r);
-            }
-            
         }
+
+        return false;
     }
 }
-
-
-void receive_trame(trame *t, reseau *r) {
-    if (t == NULL || r == NULL) return;
-
-    //chercher la machine avec l'adresse MAC de destination
-    machine *dest_machine = NULL;
-
-    for (size_t i = 0; i < r->nbr_machines; i++) {
-        if (r->machines[i].tp_equip == TYPE_STATION) {
-            station *st = (station*) r->machines[i].equipement;
-            if (memcmp(st->st_MAC.mac, t->dest.mac, 6) == 0) {
-                dest_machine = &r->machines[i];
-                break;
-            }
-        } else if (r->machines[i].tp_equip == TYPE_SWITCH) {
-            swtch *sw = (swtch*) r->machines[i].equipement;
-            if (memcmp(sw->sw_MAC.mac, t->dest.mac, 6) == 0) {
-                dest_machine = &r->machines[i];
-                break;
-            }
-        }
-    }
-
-    if (dest_machine==NULL) {
-        printf("Aucune machine ne correspond à l'adresse MAC destination.\n");   //NORMALEMENT CA NE PEUT PAS ARRIVER MAIS AU CAS OU PETER MON CRANE
-        return;
-    }
-
-    printf("Machine %d a reçu une trame !\n", dest_machine->id);
-  
-
-    paquet_IP* pkt = (paquet_IP*) t->data;
-    if (pkt->p == ICMP) {
-        paquet_ICMP *icmp = (paquet_ICMP*) pkt->donnees;
-        switch (icmp->type) {
-            case ICMP_ECHO_REQUEST:
-                printf("\n=======Reçu un ICMP ECHO REQUEST (ping).=======\n\n");
-
-                //inverser adresses
-                adresse_MAC mac_src_reply;
-                adresse_MAC mac_dst_reply;
-                adresse_IP ip_src_reply;
-                adresse_IP ip_dst_reply;
-
-                if (dest_machine->tp_equip == TYPE_STATION) {
-                    station* st = (station*)dest_machine->equipement;
-                    mac_src_reply = st->st_MAC;
-                    ip_src_reply = st->st_IP;
-                } 
-                else {
-                    swtch* sw = (swtch*)dest_machine->equipement;
-                    mac_src_reply = sw->sw_MAC;
-                    ip_src_reply = pkt->dst;  // approximation (pas d'IP pour switch)
-                }
-
-                mac_dst_reply = t->src;
-                ip_dst_reply = pkt->src;
-
-                // Créer trame de réponse (pong)
-                trame *reply = creation_trame(mac_src_reply, mac_dst_reply, mac_src_reply ,ip_src_reply, ip_dst_reply, PING, ICMP_ECHO_REPLY);
-                if (reply==NULL) {
-                    perror("Erreur lors de la création du pong.\n");
-                    break;
-                }
-
-                send_trame(reply, r);
-                deinit_tram(reply);
-                free(reply);
-                break;
-
-            case ICMP_ECHO_REPLY:
-                printf("\n=======Reçu un ICMP ECHO REPLY (pong).=======\n\n");
-                break;
-            case ICMP_DEST_UNREACHABLE:
-                printf("\n=======Reçu ICMP DESTINATION UNREACHABLE.=======\n\n");
-                break;
-            default:
-                printf("ICMP inconnu.\n");
-        }
-    }
-    else {
-        printf("Paquet IP avec protocole non supporté : %d\n", pkt->p);
-    }
-}
-

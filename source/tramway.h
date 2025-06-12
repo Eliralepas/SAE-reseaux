@@ -32,6 +32,4 @@ trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_MAC pass
 void affich_tram_utilisasteur(trame *etoile_bourse);
 void affich_tram_hexa(trame *lixenbuhl);
 
-void send_trame(trame *t, reseau *r);
-void receive_trame(trame *t, reseau *r);
-void propager_trame(trame *t, reseau *r, machine *current, machine *prev);
+void envoie_trame(reseau *r, trame *t);

@@ -46,8 +46,10 @@ typedef struct swtch
     int nb_port;
     uint16_t priorite;    
     association *tab_association; 
+    int nb_asso;
     int port_utilises; // compteur 
     etatPort *port_etat;
+    int* connectes;     //tableau ou indice i == port et dedans [i] == id de la machine en face
     bpdu bridge_protocol;
 } swtch;
 
@@ -64,7 +66,7 @@ typedef struct machine{
 
 void init_station(station *st);
 void deinit_station(station *st);
-void init_switch(swtch *sw);
+void init_switch(swtch *sw, int nb_equip);
 void deinit_switch(swtch *sw);
 void mac_to_str(adresse_MAC M, char *str);
 void ip_to_str(adresse_IP IP, char *str);
