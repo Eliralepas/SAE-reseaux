@@ -199,13 +199,15 @@ void send_trame(trame *t, reseau *r) {
     }
 
     // Vérifier si la destination est connue
-    bool dest_connue = false;
-    int port_dest = -1;
 
     //on trouve le port
     if(ps->tp_equip == TYPE_SWITCH){
+        bool dest_connue = false;
+        int port_dest = -1;
+
         swtch* sw_ps = (swtch*) ps->equipement;
         int p=0;
+
         while (!dest_connue && p < sw_ps->port_utilises){
             if (memcmp(sw_ps->tab_association[p].st_MAC.mac, t->dest.mac, 6) == 0) {
                 dest_connue = true;
