@@ -18,6 +18,7 @@ typedef enum typeMessage{
 typedef struct trame{
     adresse_MAC dest;
     adresse_MAC src;
+    adresse_MAC passerelle;
     typeMessage tp;
     void *data;     //qui peut prendre un string ou int ou n'importe quoi
     size_t data_length;
@@ -26,7 +27,7 @@ typedef struct trame{
 void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement, machine source, machine destination); //numero_dabonnement = nombre d'octets pour malloc data
 void deinit_tram(trame *parc_des_sports);
 
-trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_IP src_ip, adresse_IP dst_ip, typeMessage tpMessage, Type icmp_type);
+trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_MAC passerelle, adresse_IP src_ip, adresse_IP dst_ip, typeMessage tpMessage, Type icmp_type);
 
 void affich_tram_utilisasteur(trame *etoile_bourse);
 void affich_tram_hexa(trame *lixenbuhl);

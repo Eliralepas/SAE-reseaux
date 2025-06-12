@@ -10,17 +10,17 @@ int main() {
     reseau r;
     init_reseau(&r);
 
-    charger_reseau("no_cycle.txt", &r);
+    charger_reseau("fichier.txt", &r);
 
     affichage_reseau(&r);
 
-    machine *stA = &r.machines[2];
-    machine *stB = &r.machines[3];
+    machine *stA = &r.machines[3];
+    machine *stB = &r.machines[2];
 
     station *sta = (station *)stA->equipement;
     station *stb = (station *)stB->equipement;
 
-    trame *t = creation_trame(sta->st_MAC, stb->st_MAC, sta->st_IP, stb->st_IP, PING, ICMP_ECHO_REQUEST);
+    trame *t = creation_trame(sta->st_MAC, stb->st_MAC, sta->st_MAC, sta->st_IP, stb->st_IP, PING, ICMP_ECHO_REQUEST);
     if (!t) {
         fprintf(stderr, "Erreur : échec de création de la trame\n");
         deinit_reseau(&r);
@@ -40,7 +40,6 @@ int main() {
         for (int k=0; k<r.nbr_machines; k++){
             visite[k]=0;
     }
-    printf("%u",calcul_cout(&r, sw, visite));
 
     printf("\n=== Début de la simulation d'envoi ===\n");
     send_trame(t, &r);
