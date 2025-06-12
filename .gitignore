@@ -6,3 +6,4 @@
 *.gch
 /.idea
 /build
+/debug
