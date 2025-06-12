@@ -14,8 +14,8 @@ int main() {
 
     affichage_reseau(&r);
 
-    machine *stA = &r.machines[3];
-    machine *stB = &r.machines[2];
+    machine *stA = &r.machines[2];
+    machine *stB = &r.machines[3];
 
     station *sta = (station *)stA->equipement;
     station *stb = (station *)stB->equipement;
