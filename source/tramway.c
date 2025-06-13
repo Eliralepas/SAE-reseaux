@@ -120,122 +120,139 @@ void affich_tram_hexa(trame *lixenbuhl){
 }
 
 void send_trame(trame *t, reseau *r) {
-    if (t==NULL || r==NULL) return;
-
-    //trouver la machine source pour le tableau de voisin
-    machine *src = NULL;
-    for (size_t i = 0; i < r->nbr_machines; i++){
-        machine *m = &r->machines[i];
-
-        if (m->tp_equip == TYPE_STATION) {
-            station *st = (station *)m->equipement;
-            if (memcmp(st->st_MAC.mac, t->src.mac, 6) == 0) {
-                src = m;
-                break;
-            }
-        } else if (m->tp_equip == TYPE_SWITCH) {
-            swtch *sw = (swtch *)m->equipement;
-            if (memcmp(sw->sw_MAC.mac, t->src.mac, 6) == 0) {
-                src = m;
-                break;
-            }
-        }
-    }
-
-    if (src==NULL){
-        printf("Erreur : machine source introuvable.\n");
+    if (t == NULL || r == NULL) {
+        perror("Erreur: trame ou réseau invalide\n");
         return;
     }
 
-    //décodage par rapport type du message
-    if (t->tp == PING){
-        paquet_IP* pkt = (paquet_IP*) t->data;
-        paquet_ICMP* icmp = (paquet_ICMP*) pkt->donnees;
-        switch (icmp->type)
-        {
-        case ICMP_ECHO_REQUEST:
-            char str[16];
-            ip_to_str(pkt->dst, str);
-            printf("Envoie d'une requête 'Ping' %s avec %ld octets de données :\n", str, t->data_length);
-            break;
-        
-        case ICMP_ECHO_REPLY:
-            ip_to_str(pkt->dst, str);
-            printf("Réponse de %s\n", str);
-            break;  
-        
-        case ICMP_DEST_UNREACHABLE: 
-            printf("Destination introuvable.\n");
-            break;
-        
-        default:
+    // 1. Trouver la machine source
+    machine *src = NULL;
+    for (size_t i = 0; i < r->nbr_machines; i++) {
+        machine *m = &r->machines[i];
+        if ((m->tp_equip == TYPE_STATION && memcmp(((station*)m->equipement)->st_MAC.mac, t->src.mac, 6) == 0) ||
+            (m->tp_equip == TYPE_SWITCH && memcmp(((swtch*)m->equipement)->sw_MAC.mac, t->src.mac, 6) == 0)) {
+            src = m;
             break;
         }
     }
 
-    //envoyer la trame aux voisins
-    int nb = nb_voisin(src, r);
-    machine voisins [nb];
+    if (src == NULL) {
+        perror("Erreur: machine source introuvable\n");
+        return;
+    }
+
+    //afficher le message ICMP
+    if (t->tp == PING && t->data != NULL) {
+        paquet_IP *pkt = (paquet_IP *)t->data;
+        if (pkt->p == ICMP && pkt->donnees != NULL) {
+            paquet_ICMP *icmp = (paquet_ICMP *)pkt->donnees;
+            char ip_str[16];
+            ip_to_str(pkt->dst, ip_str);
+            
+            if (icmp->type == ICMP_ECHO_REQUEST) {
+                printf("Envoi Ping vers %s...\n", ip_str);
+            } else if (icmp->type == ICMP_ECHO_REPLY) {
+                printf("Réponse Ping de %s\n", ip_str);
+            }
+        }
+    }
+
+    // obtenir les voisins directs
+    int nb_voisins = nb_voisin(src, r);
+    machine voisins[nb_voisins];
     tab_voisin(src, voisins, r);
 
-    for (int i = 0; i < nb; i++) {
-        machine *dest = &voisins[i];
+    bool trame_envoyee = false;
 
-        //si le destinataire est un switch -> propager la trame
-        if (dest->tp_equip == TYPE_SWITCH) {
-            swtch *sw = (swtch *)dest->equipement;
+    for (int i = 0; i < nb_voisins; i++) {
+        machine *voisin = &voisins[i];
 
-            //MAC source connu par la switch ??
-            bool connu = false;
+        //si le voisin est un switch
+        if (voisin->tp_equip == TYPE_SWITCH) {
+            swtch *sw = (swtch *)voisin->equipement;
+
+            // Mise à jour table de commutation si source inconnue
+            bool src_connue = false;
             for (int j = 0; j < sw->port_utilises; j++) {
-                if (memcmp(sw->tab_association[j].st_MAC.mac, t->src.mac, 6) == 0){
-                    connu = true;
+                if (memcmp(sw->tab_association[j].st_MAC.mac, t->src.mac, 6) == 0) {
+                    src_connue = true;
                     break;
                 }
             }
-            //s'il ne le connait pas on le rajoute a la tab de commutation
-            if (!connu && sw->port_utilises < sw->nb_port) {
-                sw->tab_association[sw->port_utilises].st_MAC = t->src;
-                sw->tab_association[sw->port_utilises].port = sw->port_utilises;
+
+            if (!src_connue && sw->port_utilises < sw->nb_port) {
+                int port_libre = sw->port_utilises;
+                sw->tab_association[port_libre].st_MAC = t->src;
+                sw->tab_association[port_libre].port = port_libre;
+                sw->port_etat[port_libre] = DESIGNE;
                 sw->port_utilises++;
-                printf("Table de commutation mise à jour (machine %d).\n", dest->id);
-                affichage_tab_commutation(sw);
+                
+                printf("Switch %d: Apprentissage MAC ", voisin->id);
+                for (int k = 0; k < 6; k++) printf("%02X:", t->src.mac[k]);
+                printf(" sur port %d\n", port_libre);
             }
 
-            //MAC dest connu ?
-            bool mac_dest_connue = false;
+            // Vérifier si la destination est connue
+            bool dest_connue = false;
+            int port_dest = -1;
+
             for (int j = 0; j < sw->port_utilises; j++) {
-                if (memcmp(sw->tab_association[j].st_MAC.mac, t->dest.mac, 6) == 0){
-                    mac_dest_connue = true;
+                if (memcmp(sw->tab_association[j].st_MAC.mac, t->dest.mac, 6) == 0) {
+                    dest_connue = true;
+                    port_dest = sw->tab_association[j].port;
                     break;
                 }
             }
 
-            if (mac_dest_connue) {
-                //on l'envoie au bon voisin
+            // si destination connue et port actif
+            if (dest_connue && sw->port_etat[port_dest] != BLOQUE) {
+                printf("Switch %d: Forwarding vers port %d (MAC connu)\n", voisin->id, port_dest);
                 receive_trame(t, r);
+                trame_envoyee = true;
+                break;
             } 
+            // sinon, broadcast sur ports actifs
             else {
-                // Diffusion : le switch envoie à tous ses voisins sauf la source
-                int nb_sw = nb_voisin(dest, r);
-                machine voisins_sw [nb_sw];
-                tab_voisin(dest, voisins_sw, r);
-
-                for (int k = 0; k < nb_sw; k++) {
-                    if (voisins_sw[k].id != src->id) {
-                        receive_trame(t, r); //propager à tous sauf retour source !!
+                printf("Switch %d: Broadcast (MAC inconnu)\n", voisin->id);
+                for (int j = 0; j < sw->port_utilises; j++) {
+                    if (sw->port_etat[j] != BLOQUE) {
+                        for (size_t k = 0; k < r->nbr_machines; k++) {
+                            machine *m = &r->machines[k];
+                            if (m->tp_equip == TYPE_STATION) {
+                                station *st = (station *)m->equipement;
+                                if (memcmp(sw->tab_association[j].st_MAC.mac, st->st_MAC.mac, 6) == 0 &&
+                                    memcmp(st->st_MAC.mac, t->src.mac, 6) != 0) {
+                                    receive_trame(t, r);
+                                    trame_envoyee = true;
+                                }
+                            }
+                        }
                     }
                 }
             }
-
-        } 
-        else {
-            //destinataire est une station ? on essaie de lui envoyer directement
-            receive_trame(t, r);
+        }
+        // si le voisin est une station et c'est la destination
+        else if (voisin->tp_equip == TYPE_STATION) {
+            station *st = (station *)voisin->equipement;
+            if (memcmp(st->st_MAC.mac, t->dest.mac, 6) == 0) {
+                printf("Destination trouvée: Station %d\n", voisin->id);
+                receive_trame(t, r);
+                trame_envoyee = true;
+                break;
+            }
         }
     }
-}
 
+    if (!trame_envoyee) {
+        perror("Erreur: Aucun chemin actif vers la destination\n");
+
+        printf("Source MAC: ");
+        for (int i = 0; i < 6; i++) printf("%02X:", t->src.mac[i]);
+        printf("\nDest MAC: ");
+        for (int i = 0; i < 6; i++) printf("%02X:", t->dest.mac[i]);
+        printf("\n");
+    }
+}
 
 
 void receive_trame(trame *t, reseau *r) {

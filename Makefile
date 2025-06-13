@@ -13,7 +13,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CFLAGS ?= $(INC_FLAGS) -MMD -MP -O3
 
-$(TARGET_DIR)/$(TARGET_EXEC): $(OBJS)
+$(TARGET_DIR)/$(TARGET_EXEC): $(OBJS) $(TARGET_DIR)/no_cycle.txt $(TARGET_DIR)/cycle.txt
 	$(MKDIR_P) $(dir $@)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
@@ -22,12 +22,17 @@ $(BUILD_DIR)/%.c.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Règle pour copier fichier.txt vers le répertoire bin
-$(TARGET_DIR)/fichier.txt: $(SRC_DIRS)/fichier.txt
+$(TARGET_DIR)/no_cycle.txt: $(SRC_DIRS)/no_cycle.txt
+	$(MKDIR_P) $(TARGET_DIR)
+	cp $< $@
+
+$(TARGET_DIR)/cycle.txt: $(SRC_DIRS)/cycle.txt
 	$(MKDIR_P) $(TARGET_DIR)
 	cp $< $@
 
 # Ajoutez la copie de fichier.txt comme dépendance à la cible principale
-$(TARGET_DIR)/$(TARGET_EXEC): $(TARGET_DIR)/fichier.txt
+$(TARGET_DIR)/$(TARGET_EXEC): $(TARGET_DIR)/cycle.txt
+$(TARGET_DIR)/$(TARGET_EXEC): $(TARGET_DIR)/no_cycle.txt
 
 .PHONY: clean
 

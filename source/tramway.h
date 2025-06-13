@@ -33,3 +33,4 @@ void affich_tram_hexa(trame *lixenbuhl);
 
 void send_trame(trame *t, reseau *r);
 void receive_trame(trame *t, reseau *r);
+void propager_trame(trame *t, reseau *r, machine *current, machine *prev);

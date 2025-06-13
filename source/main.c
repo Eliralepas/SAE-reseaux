@@ -10,15 +10,12 @@ int main() {
     reseau r;
     init_reseau(&r);
 
-    if (charger_reseau("./fichier.txt", &r) != 0) {
-        fprintf(stderr, "Erreur : impossible de charger le réseau\n");
-        return EXIT_FAILURE;
-    }
+    charger_reseau("no_cycle.txt", &r);
 
     affichage_reseau(&r);
 
-    machine *stA = &r.machines[0];
-    machine *stB = &r.machines[1];
+    machine *stA = &r.machines[2];
+    machine *stB = &r.machines[3];
 
     station *sta = (station *)stA->equipement;
     station *stb = (station *)stB->equipement;
@@ -52,7 +49,6 @@ int main() {
     deinit_tram(t);
     free(t);
     deinit_reseau(&r);
-
 
     return 0;
 }
