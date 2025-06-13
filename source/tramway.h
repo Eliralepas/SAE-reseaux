@@ -7,7 +7,6 @@
 #include <sys/types.h>
 #include "machines.h" 
 #include "reseau.h"
-#include "paquet_IP.h"
 
 #define LONGUEUR_MAX_DATA
 

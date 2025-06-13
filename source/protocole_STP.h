@@ -7,6 +7,6 @@
 #include <sys/types.h>
 #include "machines.h" 
 #include "reseau.h"
-#include "paquet_IP.h"
 
 void protocole_STP_chemin(reseau *r);
+void affichage_port_etat(reseau *r);

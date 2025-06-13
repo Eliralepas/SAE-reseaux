@@ -179,3 +179,33 @@ void protocole_STP_chemin(reseau *r) {
     free(fixes);
     free(distance_sommet);
 }
+
+void affichage_port_etat(reseau *r){
+    for (int i=0; i<r->nb_machines; i++){
+        machine *m = &r->machines[i];
+
+        if(m->tp_equip == TYPE_SWITCH){
+            swtch *sw = (swtch*) m->equipement;
+            printf("Switch ID %d :\n", m->id);
+            for (int p = 0; p < sw->nb_port; p++) {
+                if(sw->connectes[p]!= -1){
+                    printf("  Port %d -> ", p);
+                    switch (sw->port_etat[p]) {
+                        case RACINE:
+                            printf("RACINE\n");
+                            break;
+                        case DESIGNE:
+                            printf("DESIGNE\n");
+                            break;
+                        case BLOQUE:
+                            printf("BLOQUE\n");
+                            break;
+                        default:
+                            printf("ERREUR\n");
+                            break;
+                    }
+                }
+            }
+        }        
+    }
+}

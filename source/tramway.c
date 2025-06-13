@@ -91,10 +91,9 @@ void affich_tram_hexa(trame *lixenbuhl){
     
 
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
-    printf("%s - %s\t passerelle : %s", src, dest);
-    for(size_t i = 0; i < lixenbuhl->data_length; i++){
-        //printf("%02hhX:", octetlixenbuhl->data[i]);   //A FAIRE
-    }
+    printf("%s - %s\t", src, dest);
+    printf("%s", lixenbuhl->data);   //A FAIRE
+    
     printf("\n---------------------------------------------\n");
 }
 
@@ -157,8 +156,6 @@ void envoie_trame(reseau *r, trame *t){
     //cherche le port du switch de réception
     int port=-1;
     for(int i=0; i<sw->nb_port; i++){
-        printf("sw->connec : %d\n", sw->connectes[i]);
-        printf("port utilise : %d\n", sw->nb_port);
         if(sw->connectes[i] == id_src){
             port = i;
             break;
@@ -168,10 +165,10 @@ void envoie_trame(reseau *r, trame *t){
     bool essai = send_trame(r, t, m, port, id_src);
 
     if(essai){
-        printf("c'est good\n");
+        printf("La trame e bien été reçue!\n");
     }
     else{
-        printf("La trame n'est pas arrivée\n");
+        printf("La trame n'est pas arrivée à destination.\n");
     }
 
 }
@@ -181,19 +178,18 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
         printf("c'est uen station\n");
         station * st = (station*) equip->equipement;
         if(memcmp(t->dest.mac, st->st_MAC.mac, 6)==0){
-            printf("c'est bon\n");
+            printf("Station n°%d : ce trame est bien pour moi.\n", equip->id);
             return true;
         }
         else{
-            printf("c'est aps pour moi\n");
+            printf("Station n°%d : ce trame n'est pas pour moi.\n", equip->id);
             return false;
         }
     }
 
-    printf("port recep : %d\n", port_recep);
     bool existe_asso_src = false;
     int port=-1;
-    printf("switch n°%d a recu la trame\n", equip->id);
+    printf("Switch n°%d a recu la trame.\n", equip->id);
     swtch *sw = (swtch*) equip->equipement;
     for (int i=0; i<sw->nb_asso; i++){
         if(memcmp(sw->tab_association[i].st_MAC.mac, t->src.mac, 6)==0){
@@ -223,6 +219,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
 
     if(existe_asso_dest){  
         //le switch connait la dest connu
+        printf("Le switch n°%d connait la destination.\n", equip->id);
         int id_suivant = sw->connectes[port_suivant];
         machine *equip_suivant = &r->machines[id_suivant];
         int port = -1;
@@ -250,7 +247,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
         return send_trame(r, t, equip_suivant, port, equip->id);
     }
     else{
-        //on connait pas broadcast
+        printf("BROADCAST : adresse MAC inconnu.\n");
         for(int i=0; i < sw->nb_port; i++){
             
             int id_suivant = sw->connectes[i];

@@ -4,7 +4,6 @@
 #include "machines.h"
 #include "reseau.h"
 #include "tramway.h"
-#include "paquet_IP.h"
 #include "protocole_STP.h"
 
 int main() {
@@ -45,6 +44,8 @@ int main() {
     printf("\n=== Début de la simulation d'envoi ===\n");
     envoie_trame(&r, t);
     printf("=== Fin de la simulation ===\n");
+
+    affichage_port_etat(&r);
 
     deinit_trame(t);
     free(t);
