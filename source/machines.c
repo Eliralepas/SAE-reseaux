@@ -9,8 +9,8 @@ void init_station(station *st){
     memset(st->st_MAC.mac, 0, 6);
 }
 
+//free les alloc s'il y en a et met les valeurs à 0/NULL
 void deinit_station(station *st){
-    //Je pense que faut réutiliser cette meme commande vu qu'on veut les repasser à 0
     if(st==NULL) return;
     memset(st->st_IP.ip, 0, 4);
     memset(st->st_MAC.mac, 0, 6);
@@ -23,6 +23,7 @@ void init_switch(swtch *sw, int nb_equip, int nb_port){
     sw->nb_port = nb_port; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
     sw->nb_asso = 0;
+    sw->port_utilises = 0;
 
     sw->tab_association = malloc(sizeof(association) * (nb_equip-1));
 
@@ -46,20 +47,29 @@ void init_switch(swtch *sw, int nb_equip, int nb_port){
     sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
 }
 
+//free les alloc s'il y en a et met les valeurs à 0/NULL
 void deinit_switch(swtch *sw){
     if (sw==NULL) return;
+
     memset(sw->sw_MAC.mac, 0, 6);
 
-    free(sw->tab_association);
-    sw->tab_association = NULL;
+    if (sw->tab_association!=NULL) {
+        free(sw->tab_association);
+        sw->tab_association = NULL;
+    }
+
+    /*if (sw->port_etat!=NULL) {
+        free(sw->port_etat);
+        sw->port_etat = NULL;
+    }*/
+
+    if (sw->connectes!=NULL) {
+        free(sw->connectes);
+        sw->connectes = NULL;
+    }
 
     sw->nb_asso = 0;
-
-    free(sw->port_etat);
-    sw->port_etat = NULL;
-
-    free(sw->connectes);
-    sw->connectes = NULL;
+    sw->port_utilises = 0;
 
     sw->bridge_protocol.root_id = 0;
     sw->bridge_protocol.bridge_id = 0;

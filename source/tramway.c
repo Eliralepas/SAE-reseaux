@@ -248,11 +248,10 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
     }
     else{
         printf("BROADCAST : adresse MAC inconnu.\n");
-        for(int i=0; i < sw->nb_port; i++){
+        for(int i=0; i < sw->nb_port; i++){ 
             
             int id_suivant = sw->connectes[i];
             if (id_suivant==id_precedent){
-                printf("%d: %d\n", id_suivant, id_precedent);
                 continue;
             }
             machine *equip_suivant = &r->machines[id_suivant];

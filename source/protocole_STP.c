@@ -26,7 +26,7 @@ void protocole_STP_chemin(reseau *r) {
         return;
     }
 
-    printf("root id n° : %d\n", root_switch->id);
+    printf("La racine est la machine n°%d\n", root_switch->id);
 
 
     // Mise a jour des root id
@@ -136,7 +136,7 @@ void protocole_STP_chemin(reseau *r) {
             }
             sw->port_etat[port] = RACINE;
         }        
-    }
+    }   
 
     for (int i=0; i<r->nb_machines; i++){
         machine *m = (machine*) &r->machines[i];

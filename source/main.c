@@ -32,6 +32,7 @@ int main() {
     }
     strcpy(data, "je t'envoie un trame.");
 
+
     trame *t = creation_trame(sta->st_MAC, stb->st_MAC, data, strlen(data) + 1);
     if (!t) {
         fprintf(stderr, "Erreur : échec de création de la trame\n");
@@ -39,6 +40,11 @@ int main() {
         deinit_reseau(&r);
         return EXIT_FAILURE;
     }
+
+    //Message d'envoie
+    printf(">>>>>>Machine %d envoie à la machine %d\n", stA->id, stB->id);
+    affich_tram_utilisasteur(t);
+
     protocole_STP_chemin(&r);
 
     printf("\n=== Début de la simulation d'envoi ===\n");
@@ -46,6 +52,8 @@ int main() {
     printf("=== Fin de la simulation ===\n");
 
     affichage_port_etat(&r);
+
+    
 
     deinit_trame(t);
     free(t);

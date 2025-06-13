@@ -18,7 +18,7 @@ void init_reseau(reseau *r)
 
 void deinit_reseau(reseau *r) {
     if (r == NULL) return;
-    
+
     // libération des machines
     for (size_t i = 0; i < r->nb_machines; i++) {
         machine *m = &r->machines[i];
@@ -26,20 +26,19 @@ void deinit_reseau(reseau *r) {
             swtch *sw = (swtch*) m->equipement;
             deinit_switch(sw);
             free(sw);
-            m->equipement = NULL;
         }
         else if (m->tp_equip == TYPE_STATION && m->equipement != NULL){
             station *st = (station*) m->equipement;
             deinit_station(st);
             free(st);
-            m->equipement = NULL;
         }
+        m->equipement = NULL;
     }
-    r->nb_machines=0;
     if (r->machines != NULL) {
         free(r->machines);
         r->machines = NULL;
     }
+
     if (r->aretes != NULL) {
         free(r->aretes);
         r->aretes = NULL;
@@ -47,6 +46,7 @@ void deinit_reseau(reseau *r) {
     r->nb_machines = 0;
     r->nb_aretes = 0;
     r->aretes_capacite=0;
+    r->nb_machines=0;
 }
 
 //Lecture du fichier de configuration renvoie un structure reseau, si celui ci n'est pas possible alors renvoie null
@@ -198,14 +198,12 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         if (g->machines[j].tp_equip == TYPE_SWITCH){
             machine* m = (machine*) &g->machines[j];
             swtch* sw = (swtch*) m->equipement;
-            printf(">>>>>>switch %d\n", m->id);
             for (int i = 0; i<g->nb_aretes; i++){
                 arete *art = &g->aretes[i];
                 if(art->m1->id == m->id){
                     for (int p=0; p<sw->nb_port; p++){
                         if(sw->connectes[p]==-1){
                             sw->connectes[p] = art->m2->id;
-                            printf("port %d -> %d\n", p, art->m2->id);
                             break;
                         }
                     }
@@ -214,7 +212,6 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
                     for (int p=0; p<sw->nb_port; p++){
                         if(sw->connectes[p]==-1){
                             sw->connectes[p] = art->m1->id;
-                            printf("port %d -> %d\n", p, art->m1->id);
                             break;
                             
                         }
