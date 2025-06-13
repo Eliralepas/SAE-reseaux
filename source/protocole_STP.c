@@ -128,7 +128,7 @@ void protocole_STP_chemin(reseau *r) {
             sw->bridge_protocol.cost = distance_sommet[m->id];
 
             int port= -1;
-            for (int j = 0; j<sw->nb_port; j++){
+            for (int j = 0; j<sw->port_utilises; j++){
                 if(sommets_precedents[m->id] == sw->connectes[j]){
                     port = j;
                     break;
@@ -149,17 +149,17 @@ void protocole_STP_chemin(reseau *r) {
                 if(sw->port_etat[j]== RACINE){
                     continue;
                 }
-
+                
                 int port_en_face = sw->connectes[j];
                 machine *recup_machine = (machine*) &r->machines[port_en_face];
 
                 if (recup_machine->tp_equip == TYPE_SWITCH){
-                    swtch *sw_face = (swtch*) m->equipement;
+                    swtch *sw_face = (swtch*) recup_machine->equipement;
 
                     int port = -1;
                     bool est_designe = false;
                     for (int p = 0; p<sw_face->port_utilises; p++){
-                        if(sw_face->connectes[p]==m->id){
+                        if(sw_face->connectes[p]==i){
                             port = p;
                             if(sw_face->port_etat[p] == DESIGNE){
                                 est_designe = true;

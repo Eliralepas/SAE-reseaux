@@ -165,7 +165,7 @@ void envoie_trame(reseau *r, trame *t){
     bool essai = send_trame(r, t, m, port, id_src);
 
     if(essai){
-        printf("La trame e bien été reçue!\n");
+        printf("La trame est bien été reçue!\n");
     }
     else{
         printf("La trame n'est pas arrivée à destination.\n");
@@ -267,7 +267,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
             //trouvé en face le num de port
             if (port!=-1){
                 swtch *sw_suivant = (swtch*) equip_suivant->equipement;
-                if (sw_suivant->port_etat[port]==BLOQUE){
+                if (sw_suivant->port_etat[port]==BLOQUE && sw->port_etat[i]==BLOQUE){
                     continue;
                 }
             }
