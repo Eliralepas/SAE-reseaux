@@ -16,7 +16,7 @@ int main() {
         return EXIT_FAILURE;
     }
 
-    //affichage_reseau(&r);
+    affichage_reseau(&r);
 
     machine *stA = &r.machines[2];
     machine *stB = &r.machines[3];
