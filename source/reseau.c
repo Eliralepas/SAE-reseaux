@@ -9,7 +9,7 @@
 
 void init_reseau(reseau *r)
 {
-    r->nbr_machines = 0;
+    r->nb_machines = 0;
     r->nb_aretes = 0;
     r->machines = NULL;
     r->aretes = NULL;
@@ -20,7 +20,7 @@ void deinit_reseau(reseau *r) {
     if (r == NULL) return;
     
     // libération des machines
-    for (size_t i = 0; i < r->nbr_machines; i++) {
+    for (size_t i = 0; i < r->nb_machines; i++) {
         machine *m = &r->machines[i];
         if (m->tp_equip == TYPE_SWITCH && m->equipement != NULL) {
             swtch *sw = (swtch*) m->equipement;
@@ -35,7 +35,7 @@ void deinit_reseau(reseau *r) {
             m->equipement = NULL;
         }
     }
-    r->nbr_machines=0;
+    r->nb_machines=0;
     if (r->machines != NULL) {
         free(r->machines);
         r->machines = NULL;
@@ -44,7 +44,7 @@ void deinit_reseau(reseau *r) {
         free(r->aretes);
         r->aretes = NULL;
     }
-    r->nbr_machines = 0;
+    r->nb_machines = 0;
     r->nb_aretes = 0;
     r->aretes_capacite=0;
 }
@@ -70,7 +70,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
     }
 
     //Initialisation de ma structure reseau
-    g->nbr_machines = nb_machines;
+    g->nb_machines = nb_machines;
     g->nb_aretes = nb_liens;
     g->aretes = malloc(nb_liens*sizeof(arete));
     if (!g->aretes) {
@@ -96,7 +96,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             return ERROR;
         }
 
-        int type;   //1 pour station et 2 pour switch
+        int type;
         char info1[32];
         char info2[32];
         char info3[32];
@@ -112,11 +112,13 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 
         machine* m = &g->machines[i];
         m->id = i;
-        //si 1 alors station, 2 si switch
+
+        // Si 1 alors station, 2 si switch
         m->tp_equip = (type == 1) ? TYPE_STATION : TYPE_SWITCH;
         
         if (m->tp_equip == TYPE_STATION) {  
             station* st = malloc(sizeof(station));
+            init_station(st);
             //Adresse mac
             str_to_mac(&st->st_MAC, info1);
 
@@ -135,14 +137,16 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
                 return ERROR;
             }
 
-            swtch* sw = malloc(sizeof(swtch)); // tab_voisins
+            swtch* sw = malloc(sizeof(swtch));
+            init_switch(sw, nb_machines, nombre);
             //Adresse Mac
             str_to_mac(&sw->sw_MAC, info1);
             sw->nb_port = nombre;
             sw->priorite = atoi(info3);
-            sw->tab_association = malloc(sizeof(association)*nombre);
             sw->port_utilises = 0;
+
             m->equipement = sw;
+
             sw->port_etat = malloc(sizeof(etatPort)*sw->nb_port);
             for (int p = 0; p<sw->nb_port; p++){
                 sw->port_etat[p] = DESIGNE;
@@ -173,38 +177,50 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
         machine *m1 = &g->machines[src];
         machine *m2 = &g->machines[dst];
 
-        g->aretes[i].m1 = *m1;
-        g->aretes[i].m2 = *m2;
+        g->aretes[i].m1 = m1;
+        g->aretes[i].m2 = m2;
         g->aretes[i].poids = poids;
 
         // si un switch et un station
         if (m1->tp_equip == TYPE_SWITCH && m2->tp_equip == TYPE_STATION) {
             swtch *sw = (swtch *)m1->equipement;
-            station *st = (station *)m2->equipement;
-            if (sw->port_utilises < sw->nb_port) {
-                int port = sw->port_utilises;
-                sw->tab_association[port].port = port;
-                sw->tab_association[port].st_MAC = st->st_MAC;
-                sw->port_utilises++;
-            }
-            else {
-                perror("Erreur : trop de connexions sur le switch\n");
-                return ERROR;
-            }  
-        }
+            sw->port_utilises++;
+            
+        } 
         else if (m2->tp_equip == TYPE_SWITCH && m1->tp_equip == TYPE_STATION) {
             swtch *sw = (swtch *)m2->equipement;
-            station *st = (station *)m1->equipement;
-            if (sw->port_utilises < sw->nb_port) {
-                int port = sw->port_utilises;
-                sw->tab_association[port].port = port;
-                sw->tab_association[port].st_MAC = st->st_MAC;
-                sw->port_utilises++;
+            sw->port_utilises++; 
+        }
+    }
+
+    //tab connecté
+    for (int j=0; j<g->nb_machines; j++){
+        if (g->machines[j].tp_equip == TYPE_SWITCH){
+            machine* m = (machine*) &g->machines[j];
+            swtch* sw = (swtch*) m->equipement;
+            printf(">>>>>>switch %d\n", m->id);
+            for (int i = 0; i<g->nb_aretes; i++){
+                arete *art = &g->aretes[i];
+                if(art->m1->id == m->id){
+                    for (int p=0; p<sw->nb_port; p++){
+                        if(sw->connectes[p]==-1){
+                            sw->connectes[p] = art->m2->id;
+                            printf("port %d -> %d\n", p, art->m2->id);
+                            break;
+                        }
+                    }
+                }
+                else if(art->m2->id == m->id){
+                    for (int p=0; p<sw->nb_port; p++){
+                        if(sw->connectes[p]==-1){
+                            sw->connectes[p] = art->m1->id;
+                            printf("port %d -> %d\n", p, art->m1->id);
+                            break;
+                            
+                        }
+                    }
+                }
             }
-            else {
-                perror("Erreur : trop de connexions sur le switch\n");
-                return ERROR;
-            }  
         }
     }
     
@@ -213,7 +229,7 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
 }
 
 void affichage_reseau(reseau *g){
-    size_t nb = g->nbr_machines;
+    size_t nb = g->nb_machines;
     printf("----------------RESEAU----------------\n");
     printf("Nombre de machines : \t%zu\n\n", nb);
     for (size_t i=0; i<nb; i++){
@@ -247,8 +263,8 @@ void affichage_reseau(reseau *g){
     
     printf("---------------LIAISONS--------------\n");
     for (size_t p=0; p<g->nb_aretes; p++){
-        arete art = g->aretes[p];
-        printf("%d --> %d : %ld\n", art.m1.id, art.m2.id, art.poids);
+        arete *art = &g->aretes[p];
+        printf("%d --> %d : %ld\n", art->m1->id, art->m2->id, art->poids);
     }
 }
 
@@ -267,6 +283,14 @@ void affichage_tab_commutation(swtch *sw){
     }
 }
 
+void afficher(swtch* sw){
+    for (int i=0; i<sw->nb_port; i++){
+        printf("port %d -> %d\n", i, sw->connectes[i]);
+        
+    }
+    printf("%d\n", sw->nb_port);
+}
+
 
 int nb_voisin(machine *m, reseau *r) {
     if (m==NULL || r==NULL) return -1;
@@ -274,26 +298,26 @@ int nb_voisin(machine *m, reseau *r) {
     int count = 0;
     for (size_t i = 0; i < r->nb_aretes; i++) {
 
-        if (r->aretes[i].m1.id == m->id || r->aretes[i].m2.id == m->id){
+        if (r->aretes[i].m1->id == m->id || r->aretes[i].m2->id == m->id){
             count++;
         }
     }
     return count;
 }
 
-void tab_voisin(machine *m, machine voisins[], reseau *r) {
+void tab_voisin(machine *m, machine *voisins[], reseau *r) {
     if (m == NULL || r==NULL) return;
 
     size_t index = 0;
     for (size_t i = 0; i < r->nb_aretes; i++) {
-        arete a = r->aretes[i];
+        arete *a = &r->aretes[i];
 
-        if (a.m1.id == m->id) {
-            voisins[index] = a.m2;
+        if (a->m1->id == m->id) {
+            voisins[index] = r->aretes[i].m2;
             index++;
         } 
-        else if (a.m2.id == m->id) {
-            voisins[index] = a.m1;
+        else if (a->m2->id == m->id) {
+            voisins[index] = r->aretes[i].m1;
             index++;
         }
     }

@@ -43,14 +43,14 @@ typedef struct association
 typedef struct swtch
 {
     adresse_MAC sw_MAC;
-    int nb_port;
-    uint16_t priorite;    
-    association *tab_association; 
+    association *tab_association;
+    int nb_port;    
     int nb_asso;
-    int port_utilises; // compteur 
-    etatPort *port_etat;
+    int port_utilises; // compteur (nombre de port qui est branché)
     int* connectes;     //tableau ou indice i == port et dedans [i] == id de la machine en face
+    uint16_t priorite; 
     bpdu bridge_protocol;
+    etatPort *port_etat;
 } swtch;
 
 typedef enum typeEquipement{
@@ -66,7 +66,7 @@ typedef struct machine{
 
 void init_station(station *st);
 void deinit_station(station *st);
-void init_switch(swtch *sw, int nb_equip);
+void init_switch(swtch *sw, int nb_equip, int nb_port);
 void deinit_switch(swtch *sw);
 void mac_to_str(adresse_MAC M, char *str);
 void ip_to_str(adresse_IP IP, char *str);

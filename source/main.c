@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "machines.h"
 #include "reseau.h"
 #include "tramway.h"
@@ -10,9 +11,13 @@ int main() {
     reseau r;
     init_reseau(&r);
 
-    charger_reseau("fichier.txt", &r);
+    if (charger_reseau("fichier.txt", &r) != SUCCESS) {
+        fprintf(stderr, "Erreur : échec du chargement du réseau\n");
+        deinit_reseau(&r);
+        return EXIT_FAILURE;
+    }
 
-    affichage_reseau(&r);
+    //affichage_reseau(&r);
 
     machine *stA = &r.machines[2];
     machine *stB = &r.machines[3];
@@ -20,32 +25,28 @@ int main() {
     station *sta = (station *)stA->equipement;
     station *stb = (station *)stB->equipement;
 
-    trame *t = creation_trame(sta->st_MAC, stb->st_MAC, sta->st_MAC, sta->st_IP, stb->st_IP, PING, ICMP_ECHO_REQUEST);
-    if (!t) {
-        fprintf(stderr, "Erreur : échec de création de la trame\n");
+    char* data = malloc(1024);
+    if (!data) {
+        fprintf(stderr, "Erreur : échec de l'allocation de data\n");
         deinit_reseau(&r);
         return EXIT_FAILURE;
     }
+    strcpy(data, "je t'envoie un trame.");
 
-    machine *sw = NULL;
-    for (int i=0; i<r.nbr_machines; i++){
-        machine *m = (machine*) &r.machines[i];
-        if (m->tp_equip == TYPE_SWITCH){
-            sw = m;
-        }
+    trame *t = creation_trame(sta->st_MAC, stb->st_MAC, data, strlen(data) + 1);
+    if (!t) {
+        fprintf(stderr, "Erreur : échec de création de la trame\n");
+        free(data);
+        deinit_reseau(&r);
+        return EXIT_FAILURE;
     }
-
-    //protocole_STP_chemin(&r);
-    int visite[r.nbr_machines];
-        for (int k=0; k<r.nbr_machines; k++){
-            visite[k]=0;
-    }
+    protocole_STP_chemin(&r);
 
     printf("\n=== Début de la simulation d'envoi ===\n");
-    send_trame(t, &r);
+    envoie_trame(&r, t);
     printf("=== Fin de la simulation ===\n");
 
-    deinit_tram(t);
+    deinit_trame(t);
     free(t);
     deinit_reseau(&r);
 

@@ -11,23 +11,17 @@
 
 #define LONGUEUR_MAX_DATA
 
-typedef enum typeMessage{
-    PING
-}typeMessage;
-
 typedef struct trame{
     adresse_MAC dest;
     adresse_MAC src;
-    adresse_MAC passerelle;
-    typeMessage tp;
-    void *data;     //qui peut prendre un string ou int ou n'importe quoi
+    char *data;     //qui peut prendre un string ou int ou n'importe quoi
     size_t data_length;
 }trame;
 
-void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement, machine source, machine destination); //numero_dabonnement = nombre d'octets pour malloc data
-void deinit_tram(trame *parc_des_sports);
+void init_trame(trame *krimmeri_stade_de_la_meinau, char* donnees, size_t numero_dabonnement, const machine source, const machine destination); //numero_dabonnement = nombre d'octets pour malloc data
+void deinit_trame(trame *parc_des_sports);
 
-trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, adresse_MAC passerelle, adresse_IP src_ip, adresse_IP dst_ip, typeMessage tpMessage, Type icmp_type);
+trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, char* data, size_t data_length);
 
 void affich_tram_utilisasteur(trame *etoile_bourse);
 void affich_tram_hexa(trame *lixenbuhl);

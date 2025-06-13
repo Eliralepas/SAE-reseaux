@@ -16,33 +16,53 @@ void deinit_station(station *st){
     memset(st->st_MAC.mac, 0, 6);
 }
 
-void init_switch(swtch *sw, int nb_equip){
+void init_switch(swtch *sw, int nb_equip, int nb_port){
     if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
-    sw->nb_port = 16; //valeur totalement arbitraire, sujette à débat
+
+    sw->nb_port = nb_port; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
     sw->nb_asso = 0;
+
     sw->tab_association = malloc(sizeof(association) * (nb_equip-1));
+
     sw->port_etat = malloc(sizeof(etatPort) * sw->nb_port);
     for (int p = 0; p<sw->nb_port; p++){
         sw->port_etat[p] = DESIGNE;
     }
+
+    //tab connecté 
+    sw->connectes = malloc(sizeof(int) * sw->nb_port);
+    if (sw->connectes==NULL) {
+        perror("Erreur allocation connectes");
+        return;
+    }
+    for (int p = 0; p < sw->nb_port; p++) {
+        sw->connectes[p] = -1; 
+    }
+    
     sw->bridge_protocol.cost = 0;
     sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
     sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
-    
-    //tab voisin mais on a oublié son utilité MDRRR...
 }
 
 void deinit_switch(swtch *sw){
     if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
+
     free(sw->tab_association);
     sw->tab_association = NULL;
+
+    sw->nb_asso = 0;
+
     free(sw->port_etat);
     sw->port_etat = NULL;
-    sw->bridge_protocol.bridge_id = 0;
+
+    free(sw->connectes);
+    sw->connectes = NULL;
+
     sw->bridge_protocol.root_id = 0;
+    sw->bridge_protocol.bridge_id = 0;
     sw->bridge_protocol.cost = 0;
 }
 

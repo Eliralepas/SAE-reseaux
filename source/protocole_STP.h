@@ -10,4 +10,3 @@
 #include "paquet_IP.h"
 
 void protocole_STP_chemin(reseau *r);
-uint8_t calcul_cout(reseau *r, machine *m, int* visites);
