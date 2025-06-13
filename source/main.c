@@ -56,6 +56,7 @@ int main() {
     
 
     deinit_trame(t);
+    free(data);
     free(t);
     deinit_reseau(&r);
 

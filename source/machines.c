@@ -74,6 +74,11 @@ void deinit_switch(swtch *sw){
     sw->bridge_protocol.root_id = 0;
     sw->bridge_protocol.bridge_id = 0;
     sw->bridge_protocol.cost = 0;
+    
+    free(sw->port_etat);
+    sw->port_etat = NULL;
+    
+
 }
 
 void mac_to_str(adresse_MAC M, char *str){
