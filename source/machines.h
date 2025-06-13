@@ -23,9 +23,9 @@ typedef struct bpdu{
 } bpdu;
 
 typedef enum etatPort{
-    DESIGNE,
-    RACINE, 
-    BLOQUE
+    DESIGNE = 1,
+    RACINE = 0, 
+    BLOQUE = 2
 }etatPort;
 //=================================
 

@@ -234,7 +234,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
 
         if (port!=-1){
             swtch *sw_suivant = (swtch*) equip_suivant->equipement;
-            if (sw_suivant->port_etat[port]==BLOQUE){
+            if (sw_suivant->port_etat[port]==BLOQUE && sw->port_etat[port_suivant]==BLOQUE){
                 return false;
             }
         }
@@ -267,7 +267,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
             //trouvé en face le num de port
             if (port!=-1){
                 swtch *sw_suivant = (swtch*) equip_suivant->equipement;
-                if (sw_suivant->port_etat[port]==BLOQUE && sw->port_etat[i]==BLOQUE){
+                if (sw_suivant->port_etat[port]==BLOQUE || sw->port_etat[i]==BLOQUE){
                     continue;
                 }
             }
