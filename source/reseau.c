@@ -191,6 +191,12 @@ int charger_reseau(const char* nom_fichier, reseau* g) {
             swtch *sw = (swtch *)m2->equipement;
             sw->port_utilises++; 
         }
+        else if (m2->tp_equip == TYPE_SWITCH && m1->tp_equip == TYPE_SWITCH) {
+            swtch *sw1 = (swtch *)m1->equipement;
+            swtch *sw2 = (swtch *)m2->equipement;
+            sw1->port_utilises++; 
+            sw2->port_utilises++;
+        }
     }
 
     //tab connecté
