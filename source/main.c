@@ -42,7 +42,7 @@ int main() {
     }
 
     //Message d'envoie
-    printf(">>>>>>Machine %d envoie à la machine %d\n", stA->id, stB->id);
+    printf("\n>>>>>>Machine %d envoie à la machine %d\n\n", stA->id, stB->id);
     affich_tram_utilisasteur(t);
 
     protocole_STP_chemin(&r);

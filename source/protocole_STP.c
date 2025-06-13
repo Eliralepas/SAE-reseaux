@@ -37,7 +37,7 @@ void protocole_STP_chemin(reseau *r) {
             sw->bridge_protocol.root_id = min_bridge_id;
             sw->bridge_protocol.cost = (m == root_switch) ? 0 : UINT16_MAX;
             
-            for (int p = 0; p < sw->nb_port; p++) {
+            for (int p = 0; p < sw->port_utilises; p++) {
                 sw->port_etat[p] = DESIGNE;
             }
         }
@@ -145,7 +145,7 @@ void protocole_STP_chemin(reseau *r) {
         if(m->tp_equip==TYPE_SWITCH){
             swtch *sw = (swtch*) m->equipement;
 
-            for(int j=0; j<sw->nb_port; j++){
+            for(int j=0; j<sw->port_utilises; j++){
                 if(sw->port_etat[j]== RACINE){
                     continue;
                 }
@@ -158,7 +158,7 @@ void protocole_STP_chemin(reseau *r) {
 
                     int port = -1;
                     bool est_designe = false;
-                    for (int p = 0; p<sw_face->nb_port; p++){
+                    for (int p = 0; p<sw_face->port_utilises; p++){
                         if(sw_face->connectes[p]==m->id){
                             port = p;
                             if(sw_face->port_etat[p] == DESIGNE){
@@ -188,25 +188,24 @@ void affichage_port_etat(reseau *r){
 
         if(m->tp_equip == TYPE_SWITCH){
             swtch *sw = (swtch*) m->equipement;
-            printf("Switch ID %d :\n", m->id);
-            for (int p = 0; p < sw->nb_port; p++) {
-                if(sw->connectes[p]!= -1){
-                    printf("  Port %d -> ", p);
-                    switch (sw->port_etat[p]) {
-                        case RACINE:
-                            printf("RACINE\n");
-                            break;
-                        case DESIGNE:
-                            printf("DESIGNE\n");
-                            break;
-                        case BLOQUE:
-                            printf("BLOQUE\n");
-                            break;
-                        default:
-                            printf("ERREUR\n");
-                            break;
-                    }
+            printf("Switch ID %d (nombre de ports utilisés : %d) :\n", m->id, sw->port_utilises);
+            for (int p = 0; p < sw->port_utilises; p++) {
+                printf("  Port %d -> ", p);
+                switch (sw->port_etat[p]) {
+                    case RACINE:
+                        printf("RACINE\n");
+                        break;
+                    case DESIGNE:
+                        printf("DESIGNE\n");
+                        break;
+                    case BLOQUE:
+                        printf("BLOQUE\n");
+                        break;
+                    default:
+                        printf("ERREUR\n");
+                        break;
                 }
+                
             }
         }        
     }
