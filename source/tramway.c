@@ -175,7 +175,6 @@ void envoie_trame(reseau *r, trame *t){
 
 bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_precedent){
     if(equip->tp_equip == TYPE_STATION){
-        printf("c'est uen station\n");
         station * st = (station*) equip->equipement;
         if(memcmp(t->dest.mac, st->st_MAC.mac, 6)==0){
             printf("Station n°%d : ce trame est bien pour moi.\n", equip->id);
@@ -202,7 +201,7 @@ bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_prec
     
     if(!existe_asso_src){
         //creer une nouvelle asso 
-        sw->tab_association[sw->nb_asso] = (association) {t->src.mac, port};
+        sw->tab_association[sw->nb_asso] = (association) {t->src, port};
         sw->nb_asso++;
     }
 

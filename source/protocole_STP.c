@@ -134,7 +134,9 @@ void protocole_STP_chemin(reseau *r) {
                     break;
                 }
             }
-            sw->port_etat[port] = RACINE;
+            if(port!=-1){
+                sw->port_etat[port] = RACINE;
+            }
         }        
     }   
 

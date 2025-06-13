@@ -58,10 +58,10 @@ void deinit_switch(swtch *sw){
         sw->tab_association = NULL;
     }
 
-    /*if (sw->port_etat!=NULL) {
+    if (sw->port_etat!=NULL) {
         free(sw->port_etat);
         sw->port_etat = NULL;
-    }*/
+    }
 
     if (sw->connectes!=NULL) {
         free(sw->connectes);
