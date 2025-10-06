@@ -2,11 +2,12 @@
 
 #define MAX_DATA_SIZE 1500
 
-void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
-    const machine source, const machine destination){
+bool send_trame(reseau *r, trame *t, machine* equip, int port_recep, int id_precedent);
+
+void init_trame(trame *krimmeri_stade_de_la_meinau, char* donnees, size_t numero_dabonnement, const machine source, const machine destination){
     adresse_MAC dest; 
     adresse_MAC src;
-    
+
     //Adresse MAC DESTINATION
     if(destination.tp_equip == TYPE_STATION){
         station* mach = (station*) destination.equipement;
@@ -31,20 +32,34 @@ void init_tram(trame *krimmeri_stade_de_la_meinau, size_t numero_dabonnement,
 
     //Longueur et allocation de Data
     if(numero_dabonnement > MAX_DATA_SIZE){
-        printf("Erreur : Data trop longue\n");
-        return EXIT_FAILURE;
+        perror("Erreur : Data trop longue\n");
+        return;
     }
-    krimmeri_stade_de_la_meinau->data_longueur = numero_dabonnement;
-    krimmeri_stade_de_la_meinau->data = malloc(sizeof(octet)*krimmeri_stade_de_la_meinau->data_longueur);
+    krimmeri_stade_de_la_meinau->data_length = numero_dabonnement;
+    krimmeri_stade_de_la_meinau->data = donnees;
 
-    memset(krimmeri_stade_de_la_meinau->data, 0, krimmeri_stade_de_la_meinau->data_longueur); //Sans cette ligne des trucs restés dans la memoire peuvent safficher
 }
 
-void deinit_tram(trame *parc_des_sports){
+void deinit_trame(trame *parc_des_sports){
     memset(parc_des_sports->dest.mac, 0, 6);
     memset(parc_des_sports->src.mac, 0, 6);
-    free(parc_des_sports->data);
+    parc_des_sports->data_length = 0;
     parc_des_sports->data = NULL;
+}
+
+trame* creation_trame(adresse_MAC src_mac, adresse_MAC dst_mac, char* data, size_t data_length) {
+    trame* t = malloc(sizeof(trame));
+    if (t==NULL) {
+        perror("Erreur d'allocation pour la trame\n");
+        return NULL;
+    }
+
+    t->src = src_mac;
+    t->dest = dst_mac;
+    t->data = data;
+    t->data_length = data_length;
+
+    return t;
 }
 
 void affich_tram_utilisasteur(trame *etoile_bourse){
@@ -52,6 +67,7 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
 
     char src[18];
     char dest[18];
+    char ps[18];
 
     mac_to_str(etoile_bourse->src, src);
     mac_to_str(etoile_bourse->dest, dest);
@@ -59,11 +75,8 @@ void affich_tram_utilisasteur(trame *etoile_bourse){
     printf("----- Trame Ethernet (mode utilisateur) -----\n");
     printf("Adresse source      : %s\n", src);
     printf("Adresse destination : %s\n", dest);
-    printf("Taille données      : %zu octets\n", etoile_bourse->data_longueur);
-    printf("Données             : ");
-    for (int i = 0; i < etoile_bourse->data_longueur; i++) {
-        printf("%02hhX:", etoile_bourse->data[i]);
-    }
+    printf("Taille données      : %zu octets\n", etoile_bourse->data_length);
+    printf("Données (message)   : %s\n", (char*) etoile_bourse->data);    
     printf("\n---------------------------------------------\n");
 }
 
@@ -75,253 +88,198 @@ void affich_tram_hexa(trame *lixenbuhl){
 
     mac_to_str(lixenbuhl->src, src);
     mac_to_str(lixenbuhl->dest, dest);
+    
 
     printf("----- Trame Ethernet (mode hexadécimal) -----\n");
-    printf("%s %s ");
-    for(int i = 0; i < lixenbuhl->data_longueur; i++){
-        printf("%02hhX:", lixenbuhl->data[i]);
-    }
+    printf("%s - %s\t", src, dest);
+    printf("%s", lixenbuhl->data);   //A FAIRE
+    
     printf("\n---------------------------------------------\n");
 }
-/*int echange_trames(trame *lycee_couffignal, reseau *r) {
-   // Étape 1 : Obtenir les adresses MAC source et destination
-    adresse_MAC src = lycee_couffignal->src;
-    adresse_MAC dest = lycee_couffignal->dest;
 
-    // Étape 2 : Trouver le switch approprié (simplifié pour l'exemple)
-    // Supposons que nous avons une fonction pour trouver le switch
-    swtch *sw = trouver_switch_par_port(r, &src); // Vous devez implémenter cette fonction
+void envoie_trame(reseau *r, trame *t){
+    bool machine1_existe = false;
+    int id_src = -1;
+    bool machine2_existe = false;
 
-    if (sw == NULL) {
-        printf("Switch non trouvé pour la source.\n");
-        return ERROR;
-    }
-
-    // Étape 3 : Trouver le port de destination
-    int port_dest = trouver_port_destination(sw, dest); // Vous devez implémenter cette fonction
-
-    if (port_dest == -1) {
-        // Si la destination est inconnue, diffusez la trame
-        diffuser_trame(sw, lycee_couffignal); // Vous devez implémenter cette fonction
-    } else {
-        // Envoyer la trame par le port approprié
-        envoyer_trame(sw, port_dest, lycee_couffignal); // Vous devez implémenter cette fonction
-    }
-
-    // Étape 4 : Mettre à jour la table de commutation
-    mettre_a_jour_table_commutation(sw, src, port_dest); // Vous devez implémenter cette fonction
-
-    return SUCCESS;
-
-
-    // Étape 1 : Obtenir les adresses MAC source et destination
-    adresse_MAC src = lycee_couffignal->src;
-    adresse_MAC dest = lycee_couffignal->dest;
-
-    
-    swtch *swSrc = trouver_switch_par_port(r, &src); // Implémentée
-    if (swSrc == NULL) {
-        printf("Switch non trouvé pour la source.\n");
-        return ERROR;
-    }
-
-    swtch *swDest = trouver_switch_par_port(r, &dest);
-    if (swDest == NULL) {
-        printf("Switch non trouvé pour la destination.\n");
-        return ERROR;
-    }
-    
-
-    // Étape 2 : Transmettre la trame de switch en switch
-    swtch *currentSwitch = swSrc;
-    while (currentSwitch != swDest) {
-        // Trouver le port de sortie pour atteindre le switch de destination
-        int portSortie = trouver_port_destination(currentSwitch, &dest);
-
-        if (portSortie == -1) {
-            // Si le port de sortie est inconnu, diffuser la trame
-            diffuser_trame(currentSwitch, lycee_couffignal);
-        } else {
-            // Transmettre la trame au port de sortie
-            transmettre_trame_vers_port(currentSwitch, lycee_couffignal, portSortie);
-        }
-
-        // Mettre à jour la table de commutation avec l'adresse MAC source
-        int portSource = trouver_port_source(currentSwitch, &src);
-        if (portSource != -1) {
-            mettre_a_jour_table_commutation(currentSwitch, &src, portSource);
-        }
-
-        // Passer au switch suivant
-        currentSwitch = trouver_switch_suivant(r, currentSwitch, portSortie);
-        if (currentSwitch == NULL) {
-            printf("Erreur : Impossible de trouver le switch suivant.\n");
-            return ERROR;
-        }
-    }
-
-    // Étape 3 : Transmettre la trame à la station de destination
-    transmettre_trame_vers_station(swDest, lycee_couffignal, &dest);
-
-    return SUCCESS;
-
-    
-}*/
-
-
-int echange_trames(trame *lycee_couffignal, reseau *r) {
-    //obtenir adresses MAC source et destination
-    adresse_MAC src = lycee_couffignal->src;
-    adresse_MAC dest = lycee_couffignal->dest;
-
-    //Trouver le switch source
-    swtch *swSrc = trouver_switch_par_port(r, &src);
-    if (swSrc == NULL) {
-        printf("Switch non trouvé pour la source.\n");
-        return ERROR;
-    }
-
-    //pareil switch destination
-    swtch *swDest = trouver_switch_par_port(r, &dest);
-    if (swDest == NULL) {
-        printf("Switch non trouvé pour la destination.\n");
-        return ERROR;
-    }
-
-    // Étape 2 : Transmettre la trame de switch en switch
-    swtch *switch_actuel = swSrc;
-    while (switch_actuel != swDest) {
-        // Trouver le port de sortie pour atteindre le switch de destination
-        int portSortie = trouver_port_destination(switch_actuel, &dest);
-
-        // Trouver le port d'entrée pour éviter de diffuser sur ce port
-        int portEntree = trouver_port_source(switch_actuel, &src);
-
-        if (portSortie == -1) {
-            // Si le port de sortie est inconnu, diffuser la trame
-            diffuser_trame(switch_actuel, lycee_couffignal, portEntree);
-        } else {
-            // Transmettre la trame au port de sortie
-            transmettre_trame_vers_port(switch_actuel, lycee_couffignal, portSortie);
-        }
-
-        // Mettre à jour la table de commutation avec l'adresse MAC source
-        if (portEntree != -1) {
-            mettre_a_jour_table_commutation(switch_actuel, &src, portEntree);
-        }
-
-        // Passer au switch suivant
-        switch_actuel = trouver_switch_suivant(r, switch_actuel, portSortie);
-        if (switch_actuel == NULL) {
-            printf("Erreur : Impossible de trouver le switch suivant.\n");
-            return ERROR;
-        }
-    }
-
-    // Étape 3 : Transmettre la trame à la station de destination
-    transmettre_trame_vers_station(swDest, lycee_couffignal, &dest);
-
-    return SUCCESS;
-}
-
-
-
-swtch* trouver_switch_par_port(reseau *r, adresse_MAC *mac){
-    swtch *ret_switch = NULL;
-
-    //Va chercher dans les tables de comm. de tous les switch du réseau si l'adr source de la trame s'y trouve
-    //Si trouvé dans une table de comm. retournera le switch concerné sinon tant pis ça retournera NULL 
-
-    for(size_t i = 0; i < r->nbr_machines; i++){
-        if(r->machines[i].tp_equip == TYPE_SWITCH){
-            swtch *commutateur = (swtch*)r->machines[i].equipement;
-            for(int j = 0; j<commutateur->port_utilises; j++){
-                if(memcmp(&commutateur->tab_association[j].st_MAC, mac, sizeof(adresse_MAC)) == 0) {
-                    ret_switch = commutateur;
-                    return commutateur;
-                }
+    //parcourir les machines
+    for(int i=0; i<r->nb_machines; i++){
+        machine* m = &r->machines[i];
+        if(m->tp_equip == TYPE_STATION){
+            station * st = (station*) m->equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                machine1_existe = true;
+                id_src = m->id;
+            }
+            else if(memcmp(st->st_MAC.mac, t->dest.mac, 6)==0){
+                machine2_existe = true;
             }
         }
     }
 
-    return ret_switch;
-}
+    if(!machine1_existe || !machine2_existe){
+        perror("Erreur : une des deux machines n'existe pas\n");
+        return;
+    }
 
-int trouver_port_destination(swtch *sw, adresse_MAC *dest) {
-    for (int i = 0; i < sw->port_utilises; i++) {
-        if (memcmp(&sw->tab_association[i].st_MAC, dest, sizeof(adresse_MAC)) == 0) {
-            return sw->tab_association[i].port; // Retourne le port associé à l'adresse MAC de destination
+    //trouve le switch connecté à la station source
+    machine *m = NULL;
+    swtch *sw = NULL;
+    for (int i=0; i<r->nb_aretes; i++){
+        arete *art = &r->aretes[i];
+        machine *m1 = art->m1;
+        machine *m2 = art->m2;
+        if (m1->tp_equip == TYPE_STATION){
+            station* st = (station*) m1->equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                m = art->m2;
+                sw = (swtch*) art->m2->equipement;
+                break;
+            }
         }
-    }
-    return -1; // et -1 si le port n'est pas trouvé
-}
+        else if(m2->tp_equip == TYPE_STATION){
+            station* st = (station*) m2->equipement;
+            if(memcmp(st->st_MAC.mac, t->src.mac, 6)==0){
+                m = art->m1;
+                sw = (swtch*) art->m1->equipement;
+                break;
 
-
-void diffuser_trame(swtch *sw, trame *t, int port_entree) {
-    for (int i = 0; i < sw->nb_port; i++) {
-        if (i != port_entree) {
-            // Envoyer la trame sur le port i
-            // Vous pouvez ajouter ici la logique pour envoyer la trame : cest ce que l'IA me dit mais est ce qu'on doit simuler ça ? ou est ce que ce qu'on fait 
-            //cest deja la simulation ? J'arrive pas a m'imaginer le fait de le simuler virtuellement comme ça désolé ça veut vrmt pas rentrer.
-            printf("Diffusion de la trame sur le port %d\n", i);
-        }
-    }
-}
-
-
-void transmettre_trame_vers_port(swtch *sw, trame *t, int port_sortie) {
-    // Envoyer la trame sur le port de sortie
-    // Vous pouvez ajouter ici la logique pour envoyer la trame : même chose qu'a la fonction d'avant dcp
-    printf("Transmission de la trame sur le port %d\n", port_sortie);
-}
-
-
-void mettre_a_jour_table_commutation(swtch *sw, adresse_MAC *src, int port_source) {
-    for (int i = 0; i < sw->port_utilises; i++) {
-        if (memcmp(&sw->tab_association[i].st_MAC, src, sizeof(adresse_MAC)) == 0) {
-            sw->tab_association[i].port = port_source; // Mettre a jour le port associé à l'adresse MAC source
-            return;
-        }
-    }
-    //Si adresse MAC n'est pas dans la table on l'ajt
-    if (sw->port_utilises < sw->nb_port) {
-        sw->tab_association[sw->port_utilises].st_MAC = *src;
-        sw->tab_association[sw->port_utilises].port = port_source;
-        sw->port_utilises++;
-    }
-}
-
-
-int trouver_port_source(swtch *sw, adresse_MAC *src) {
-    for (int i = 0; i < sw->port_utilises; i++) {
-        if (memcmp(&sw->tab_association[i].st_MAC, src, sizeof(adresse_MAC)) == 0) {
-            return sw->tab_association[i].port; // Retourne le port associé à l'adresse MAC source
-        }
-    }
-    return -1; // Retourne -1 si le port n'est pas trouvé
-}
-
-
-swtch* trouver_switch_suivant(reseau *r, swtch *switch_actuel, int port_sortie) {
-    for (size_t i = 0; i < r->nbr_machines; i++) {
-        if (r->machines[i].tp_equip == TYPE_SWITCH) {
-            swtch *nextSwitch = (swtch*)r->machines[i].equipement;
-            for (int j = 0; j < nextSwitch->port_utilises; j++) {
-                if (memcmp(&nextSwitch->tab_association[j].st_MAC, &switch_actuel->sw_MAC, sizeof(adresse_MAC)) == 0) {
-                    return nextSwitch; // Retourne le switch suivant
-                }
             }
         }
     }
-    return NULL; // Retourne NULL si le switch suivant n'est pas trouvé
+
+    if(sw == NULL){
+        perror("Erreur : pas de switch connecté à la source\n");
+        return;
+    }
+
+    //cherche le port du switch de réception
+    int port=-1;
+    for(int i=0; i<sw->nb_port; i++){
+        if(sw->connectes[i] == id_src){
+            port = i;
+            break;
+        }
+    }
+
+    bool essai = send_trame(r, t, m, port, id_src);
+
+    if(essai){
+        printf("La trame est bien été reçue!\n");
+    }
+    else{
+        printf("La trame n'est pas arrivée à destination.\n");
+    }
+
 }
 
+bool send_trame(reseau *r, trame* t, machine *equip, int port_recep, int id_precedent){
+    if(equip->tp_equip == TYPE_STATION){
+        station * st = (station*) equip->equipement;
+        if(memcmp(t->dest.mac, st->st_MAC.mac, 6)==0){
+            printf("Station n°%d : ce trame est bien pour moi.\n", equip->id);
+            return true;
+        }
+        else{
+            printf("Station n°%d : ce trame n'est pas pour moi.\n", equip->id);
+            return false;
+        }
+    }
 
-void transmettre_trame_vers_station(swtch *swDest, trame *t, adresse_MAC *dest) {
-    int port_dest = trouver_port_destination(swDest, dest);
-    if (port_dest != -1) {
-        transmettre_trame_vers_port(swDest, t, port_dest);
-    } else {
-        printf("Port de destination inconnu pour la station.\n");
+    bool existe_asso_src = false;
+    int port=-1;
+    printf("Switch n°%d a recu la trame.\n", equip->id);
+    swtch *sw = (swtch*) equip->equipement;
+    for (int i=0; i<sw->nb_asso; i++){
+        if(memcmp(sw->tab_association[i].st_MAC.mac, t->src.mac, 6)==0){
+            existe_asso_src = true;
+            port = sw->tab_association[i].port;
+            break;
+        }
+
+    }
+    
+    if(!existe_asso_src){
+        //creer une nouvelle asso 
+        sw->tab_association[sw->nb_asso] = (association) {t->src, port};
+        sw->nb_asso++;
+    }
+
+    bool existe_asso_dest = false;
+    int port_suivant=-1;
+    //Apprentissage sur le port
+    for (int i=0; i<sw->nb_asso; i++){
+        if(memcmp(sw->tab_association[i].st_MAC.mac, t->dest.mac, 6)==0){
+            existe_asso_dest = true;
+            port_suivant = sw->tab_association[i].port;
+            break;
+        }
+    }
+
+    if(existe_asso_dest){  
+        //le switch connait la dest connu
+        printf("Le switch n°%d connait la destination.\n", equip->id);
+        int id_suivant = sw->connectes[port_suivant];
+        machine *equip_suivant = &r->machines[id_suivant];
+        int port = -1;
+        if(equip_suivant->tp_equip == TYPE_SWITCH){
+            swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+            for (int i=0; i<sw_suivant->port_utilises; i++){
+                if(sw_suivant->connectes[i] == equip->id){
+                    port = i;
+                    break;
+                }
+            }
+        }
+
+        if (port!=-1){
+            swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+            if (sw_suivant->port_etat[port]==BLOQUE && sw->port_etat[port_suivant]==BLOQUE){
+                return false;
+            }
+        }
+        
+        if(id_suivant == id_precedent){
+            return false;
+        }
+
+        return send_trame(r, t, equip_suivant, port, equip->id);
+    }
+    else{
+        printf("BROADCAST : adresse MAC inconnu.\n");
+        for(int i=0; i < sw->nb_port; i++){ 
+            
+            int id_suivant = sw->connectes[i];
+            if (id_suivant==id_precedent){
+                continue;
+            }
+            machine *equip_suivant = &r->machines[id_suivant];
+            int port = -1;
+            if(equip_suivant->tp_equip == TYPE_SWITCH){
+                swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+                for (int i=0; i<sw_suivant->port_utilises; i++){
+                    if(sw_suivant->connectes[i] == equip->id){  //verif si le switch est bloqué
+                        port = i;
+                        break;
+                    }
+                }
+            }
+            //trouvé en face le num de port
+            if (port!=-1){
+                swtch *sw_suivant = (swtch*) equip_suivant->equipement;
+                if (sw_suivant->port_etat[port]==BLOQUE || sw->port_etat[i]==BLOQUE){
+                    continue;
+                }
+            }
+
+            bool essaie = send_trame(r, t, equip_suivant, port, equip->id);
+            if(essaie){
+                return true;
+            }   
+        
+        }
+
+
+        return false;
     }
 }

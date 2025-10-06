@@ -9,27 +9,76 @@ void init_station(station *st){
     memset(st->st_MAC.mac, 0, 6);
 }
 
+//free les alloc s'il y en a et met les valeurs à 0/NULL
 void deinit_station(station *st){
-    //Je pense que faut réutiliser cette meme commande vu qu'on veut les repasser à 0
     if(st==NULL) return;
     memset(st->st_IP.ip, 0, 4);
     memset(st->st_MAC.mac, 0, 6);
 }
 
-void init_switch(swtch *sw){
+void init_switch(swtch *sw, int nb_equip, int nb_port){
     if (sw==NULL) return;
     memset(sw->sw_MAC.mac, 0, 6);
-    sw->nb_port = 16; //valeur totalement arbitraire, sujette à débat
+
+    sw->nb_port = nb_port; //valeur totalement arbitraire, sujette à débat
     sw->priorite = 0;
-    sw->tab_association = (sizeof(association) * sw->nb_port);
-    //tab voisin mais on a oublié son utilité MDRRR...
+    sw->nb_asso = 0;
+    sw->port_utilises = 0;
+
+    sw->tab_association = malloc(sizeof(association) * (nb_equip-1));
+
+    sw->port_etat = malloc(sizeof(etatPort) * sw->nb_port);
+    for (int p = 0; p<sw->nb_port; p++){
+        sw->port_etat[p] = DESIGNE;
+    }
+
+    //tab connecté 
+    sw->connectes = malloc(sizeof(int) * sw->nb_port);
+    if (sw->connectes==NULL) {
+        perror("Erreur allocation connectes");
+        return;
+    }
+    for (int p = 0; p < sw->nb_port; p++) {
+        sw->connectes[p] = -1; 
+    }
+    
+    sw->bridge_protocol.cost = 0;
+    sw->bridge_protocol.bridge_id = concat_bridge_id(sw);
+    sw->bridge_protocol.root_id = sw->bridge_protocol.bridge_id;
 }
 
+//free les alloc s'il y en a et met les valeurs à 0/NULL
 void deinit_switch(swtch *sw){
     if (sw==NULL) return;
+
     memset(sw->sw_MAC.mac, 0, 6);
-    free(sw->tab_association);
-    sw->tab_association = NULL;
+
+    if (sw->tab_association!=NULL) {
+        free(sw->tab_association);
+        sw->tab_association = NULL;
+    }
+
+    if (sw->port_etat!=NULL) {
+        free(sw->port_etat);
+        sw->port_etat = NULL;
+    }
+
+    if (sw->connectes!=NULL) {
+        free(sw->connectes);
+        sw->connectes = NULL;
+    }
+
+    sw->nb_asso = 0;
+    sw->port_utilises = 0;
+
+    sw->bridge_protocol.root_id = 0;
+    sw->bridge_protocol.bridge_id = 0;
+    sw->bridge_protocol.cost = 0;
+    
+    free(sw->port_etat);
+    sw->port_etat = NULL;
+    
+
 }
 
 void mac_to_str(adresse_MAC M, char *str){
@@ -48,3 +97,12 @@ void str_to_ip(adresse_IP * IP, char *str){
     sscanf(str, "%hhu.%hhu.%hhu.%hhu", &IP->ip[0], &IP->ip[1], &IP->ip[2], &IP->ip[3]);
 }
 
+uint64_t concat_bridge_id(swtch *sw) {
+    return ((uint64_t)sw->priorite << 48) |
+           ((uint64_t)sw->sw_MAC.mac[0] << 40) |
+           ((uint64_t)sw->sw_MAC.mac[1] << 32) |
+           ((uint64_t)sw->sw_MAC.mac[2] << 24) |
+           ((uint64_t)sw->sw_MAC.mac[3] << 16) |
+           ((uint64_t)sw->sw_MAC.mac[4] << 8)  |
+           ((uint64_t)sw->sw_MAC.mac[5] << 0)  ;  //ça me stressait les trucs | et le ; pas alignés
+}
