@@ -7,6 +7,11 @@
 
 int main() {
     reseau *r = malloc(sizeof(reseau));
+    if (r == NULL) {
+        fprintf(stderr, "Erreur d'allocation mémoire pour le réseau\n");
+        return -1;
+    }
+
     init_reseau(r);
 
     // Choix du réseau
