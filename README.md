@@ -1,4 +1,4 @@
-# Simulation d'un réseau Lan ![Statut](https://img.shields.io/badge/Statut-En_revue-blue)
+# Simulation d'un réseau Lan ![Statut](https://img.shields.io/badge/Statut-Terminé-green)
 
 ![réseau](https://cabanisbrive.scenari-community.org/STIDD/Premiere/Sequence_03/Edp/Modelisation_Reseau_web/res/Reseau_switch.png)
 
@@ -28,5 +28,3 @@ Dans le cadre de la fin du BUT1, nous devions developper une simulation d'un ré
 - Stoackage d'une architecture du réseau dans un fichier de configuration
 - Communication de trames Ethernet
 - Option d'ajout du protocole STP (Spanning Tree Protocol)
-  
-/!\ envoie trame ne marche pas lors d'une boucle (en cours de correction)
